@@ -40,6 +40,8 @@ double *A;
 double *B;
 double *C;
 
+void cargarMatriz(double *, int, int);
+
 int main(int argc, char *argv[]){
 	
 	int i, j, k, token;
@@ -66,37 +68,116 @@ int main(int argc, char *argv[]){
 	hilos = (pthread_t *)malloc(sizeof(pthread_t) * (cant_hilos-1));
 	pthread_mutex_init(&lock, NULL);
 	//Inicialización de las matrices.
-	inicializarMatriz(A, filasA,comunAB);
-	inicializarMatriz(B,comunAB,columnasB);
-	inicializarMatriz(C,filasA,columnasB);
-	cargarMatriz(A,filasA,comunAB);
+	A = (double *)malloc (filasA*comunAB* sizeof(double));
+	B = (double *)malloc (columnasB*comunAB* sizeof(double));
+	C = (double *)malloc (filasA*comunAB* sizeof(double ));
+	cargarMatriz(A, filasA ,comunAB);
 	cargarMatriz(B,comunAB,columnasB);
 	for (i=0; i < filasA; i++){
 		for (j=0; j < columnasB; j++) {
-			C[i][j] = 0;
+			C[i*filasA+j] = 0;
 		}
 	}
 	
 	printf("Ok!!\n\n");
 	printf("Multiplicacion ...\n");
+	pthread_setconcurrency(cant_hilos);
+	
+	t1=getTime();
+	for (i=0; i < cant_hilos-1; i++)
+		pthread_create(hilos+i, NULL, mapearTarea, NULL);
+	mapearTarea(NULL);
+
+	for (i=0; i < cant_hilos-1; i++)
+		pthread_join(hilos[i], NULL);
+
+	t2=getTime();
+	
+	
+	
+	
+	free(A);
+	free(B);
+	free(C);
 	
 	//creamos un hilo por cada proceso y le mandamos su parte para multiplicar
 	//sumamos resultado final
 	
 }
-
-void inicializarMatriz(double **X,  int fila, int columna){
-	X = (double **)malloc (fila * sizeof(double *));
-	int i;
-	for (i=0; i<columna; i++)
-		X[i] = (double *)malloc (columna*sizeof(double));
-}
-void cargarMatriz(double **X, int fila, int columna){
-	int i,j;
+void cargarMatriz(double X[], int fila, int columna){
+	int i =0;
+	int j = 0;
+	printf(" Filas %d y columna %d \n", fila, columna);
 	for (i=0; i < fila; i++){
 		for (j=0; j < columna; j++) {
-			X[i][j] = (j+3) * (i+1);
+			X[i*fila+j]=(rand()%100)+1;
+			printf(" Valor %d", j );
+			printf("%2d",X[i*fila+j]);
 		}
 	}	
+}
+
+void sumarSubMatriz( indice indiceA, indice indiceB, indice indiceC )
+{
+	int i, j, k;
+
+	for (i=0; i < SUBN; i++)
+		for (j=0; j < SUBN; j++)
+			for (k=0; k < SUBN; k++)
+				C[indiceC.i + i] [indiceC.j + j] += A[indiceA.i + i] [indiceA.j + k] * B[indiceB.i + k] [indiceB.j + j];
+}
+
+
+/**
+ * Realiza la suma de todas las submatrices
+ */
+void realizarTarea(indice indi)
+{
+	int k;
+
+	indice indiceA, indiceB, indiceC;
+	indiceA.i = indi.i * SUBN;
+	indiceA.j = 0;
+	indiceB.i = 0;
+	indiceB.j = indi.j * SUBN;
+	indiceC.i = indi.i * SUBN;
+	indiceC.j = indi.j * SUBN;
+
+
+	//printf("realizarTarea: %d...\n", tarea);
+	//printf("i-j: %d.-.%d\n", indi.i, indi.j);
+
+	for (k=0; k < subnum; k++) {
+		sumarSubMatriz(indiceA, indiceB, indiceC);
+		indiceA.j += SUBN;
+		indiceB.i += SUBN;
+	}
+}
+
+
+/**
+ * Asigna una tarea a una submatriz para que luego 
+ * se pueda realizar la suma en dicha submatriz
+ */
+void *mapearTarea(void *arg)
+{
+	while (1) {
+
+		pthread_mutex_lock(&lock);
+		    tarea++;
+		pthread_mutex_unlock(&lock);
+
+		if ( tarea >= subnum+resto)
+			return NULL;
+
+		int indi = getIndice(tarea);
+		realizarTarea(indi);
+	}
+}
+int getIndice(int tarea)
+{
+	int indi;
+	indi = (int)tarea / subnum;
+	return indi;
 }
 
