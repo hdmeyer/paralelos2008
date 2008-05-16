@@ -40,6 +40,12 @@ double *A;
 double *B;
 double *C;
 
+struct indices               /* Tipo de dato para representar */
+{	int i, j;          		/* los ndices de una matriz */
+};
+typedef struct indices indice;
+indice indiceGral;
+
 void cargarMatriz(double *, int, int);
 
 int main(int argc, char *argv[]){
@@ -61,8 +67,8 @@ int main(int argc, char *argv[]){
 	cant_hilos=atoi(argv[1]);
 	
 	//dividimos la matriz de acuerdo a los procesos disponibles
-	subnum=filasA/cant_hilos;
-	resto=filasA%cant_hilos;
+	subnum=filasA;
+	//resto=filasA%cant_hilos;
 	
 	/* Inicializacion de hilos */
 	hilos = (pthread_t *)malloc(sizeof(pthread_t) * (cant_hilos-1));
@@ -131,23 +137,17 @@ void sumarSubMatriz( indice indiceA, indice indiceB, indice indiceC )
 /**
  * Realiza la suma de todas las submatrices
  */
-void realizarTarea(indice indi)
+void realizarTarea(int indi)
 {
-	int k;
-
-	indice indiceA, indiceB, indiceC;
-	indiceA.i = indi.i * SUBN;
-	indiceA.j = 0;
-	indiceB.i = 0;
-	indiceB.j = indi.j * SUBN;
-	indiceC.i = indi.i * SUBN;
-	indiceC.j = indi.j * SUBN;
-
+	int j, k;
 
 	//printf("realizarTarea: %d...\n", tarea);
 	//printf("i-j: %d.-.%d\n", indi.i, indi.j);
 
-	for (k=0; k < subnum; k++) {
+	for (j=0; j < columnasB; j++) {
+		for (k=0; k < columnasB; k++) {
+			C[indiceGral.i += A[indiceA.i + i] [indiceA.j + k] * B[indiceB.i + k] [indiceB.j + j];
+		}
 		sumarSubMatriz(indiceA, indiceB, indiceC);
 		indiceA.j += SUBN;
 		indiceB.i += SUBN;
@@ -167,17 +167,16 @@ void *mapearTarea(void *arg)
 		    tarea++;
 		pthread_mutex_unlock(&lock);
 
-		if ( tarea >= subnum+resto)
+		if ( tarea >= filasA*columnasB)
 			return NULL;
 
-		int indi = getIndice(tarea);
+		indice indi = getIndice(tarea);
 		realizarTarea(indi);
 	}
 }
-int getIndice(int tarea)
+indice getIndice(int tarea)
 {
-	int indi;
-	indi = (int)tarea / subnum;
+	indiceGral.i = (int)tarea%subnum;
 	return indi;
 }
 
