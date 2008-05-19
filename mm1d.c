@@ -52,7 +52,7 @@ void realizarTarea();
 void *mapearTarea(void *);
 void getIndice(int);
 double getTime();
-
+void imprimirMatriz(double *, int, int);
 
 int main(int argc, char *argv[]){
 	
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]){
 	//Inicialización de las matrices.
 	A = (double *)malloc (filasA*comunAB* sizeof(double));
 	B = (double *)malloc (columnasB*comunAB* sizeof(double));
-	C = (double *)malloc (filasA*comunAB* sizeof(double ));
+	C = (double *)malloc (filasA*columnasB* sizeof(double ));
 	cargarMatriz(A, filasA ,comunAB);
 	cargarMatriz(B,comunAB,columnasB);
 	for (i=0; i < filasA; i++){
@@ -90,6 +90,13 @@ int main(int argc, char *argv[]){
 			C[i*filasA+j] = 0;
 		}
 	}
+	
+	printf("Imprimimos matrices...\n");
+	printf("Matriz A\n");
+	imprimirMatriz(A,filasA,comunAB);
+	printf("Matriz B\n");
+	imprimirMatriz(B,comunAB,columnasB);
+	
 	
 	printf("Ok!!\n\n");
 	printf("Multiplicacion ...\n");
@@ -106,11 +113,12 @@ int main(int argc, char *argv[]){
 
 	t2=getTime();
 	//AK HAY ERROR
+	printf("Matriz C\n");
+	imprimirMatriz(C,filasA,columnasB);
+	printf("Duracion total de la multilplicacion de matrices %4f segundos\n", t2-t1);
 	free(A);
 	free(B);
 	free(C);
-	printf("Duracion total de la multilplicacion de matrices %4f segundos\n", t2-t1);
-	
 	
 }
 void cargarMatriz(double X[], int fila, int columna){
@@ -120,8 +128,8 @@ void cargarMatriz(double X[], int fila, int columna){
 	for (i=0; i < fila; i++){
 		for (j=0; j < columna; j++) {
 			X[i*fila+j]=(rand()%100)+1;
-			printf(" Valor %d", j );
-			printf("%2d",X[i*fila+j]);
+			printf(" Valor %2f \n",X[i*fila+j] );
+			//printf("%2d",X[i*fila+j]);
 		}
 	}	
 }
@@ -146,8 +154,8 @@ void realizarTarea()
 
 	//printf("realizarTarea: %d...\n", tarea);
 	//printf("i-j: %d.-.%d\n", indi.i, indi.j);
-
-	for (k=0; k < columnasB; k++) {
+	// CORREGIMOS COLUMNASB POR COMUNAB
+	for (k=0; k < comunAB; k++) {
 		C[indiceGral.i*columnasB +indiceGral.j] += A[indiceGral.i*comunAB+k] * B[columnasB*k + indiceGral.j];
 	}
 	//sumarSubMatriz(indiceA, indiceB, indiceC);
@@ -187,5 +195,17 @@ double getTime() {
 	struct timeval t;
 	gettimeofday(&t, NULL);
 	return (double)t.tv_sec+t.tv_usec*0.000001;
+}
+
+void imprimirMatriz(double m[], int fil, int col)
+{
+	int i, j = 0;
+	for (i=0; i < fil; i++) {
+		printf("\n\t| ");
+		for (j=0; j < col; j++)
+			printf("%2f ", m[i*fil + j]);
+		printf("|");
+	}
+	printf("\n");
 }
 
