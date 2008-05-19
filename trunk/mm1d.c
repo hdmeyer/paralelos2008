@@ -44,7 +44,8 @@ struct indices               /* Tipo de dato para representar */
 {	int i, j;          		/* los ndices de una matriz */
 };
 typedef struct indices indice;
-indice indiceGral;
+indice indiceGral;/* Aqui guardamos los indices de la matriz C para saber en que posición de ella estamos en un momento dado y nos
+				sirve para movernos a traves de ella.*/
 
 void cargarMatriz(double *, int, int);
 
@@ -99,9 +100,6 @@ int main(int argc, char *argv[]){
 
 	t2=getTime();
 	
-	
-	
-	
 	free(A);
 	free(B);
 	free(C);
@@ -144,14 +142,15 @@ void realizarTarea(int indi)
 	//printf("realizarTarea: %d...\n", tarea);
 	//printf("i-j: %d.-.%d\n", indi.i, indi.j);
 
-	for (j=0; j < columnasB; j++) {
-		for (k=0; k < columnasB; k++) {
-			C[indiceGral.i += A[indiceA.i + i] [indiceA.j + k] * B[indiceB.i + k] [indiceB.j + j];
-		}
-		sumarSubMatriz(indiceA, indiceB, indiceC);
-		indiceA.j += SUBN;
-		indiceB.i += SUBN;
+	for (k=0; k < columnasB; k++) {
+		C[indiceGral.i*columnasB +indiceGral.j] += A[indiceGral.i*comunAB+k] * B[columnasB*k + indiceGral.j];
 	}
+	//sumarSubMatriz(indiceA, indiceB, indiceC);
+	//indiceA.j += SUBN;
+	//indiceB.i += SUBN;
+	//Incrementamos aqui el valor para que la siguiente tarea, se mueva un lugar en la matriz C.
+	indiceGral.j =indiceGral.j +1;
+
 }
 
 
