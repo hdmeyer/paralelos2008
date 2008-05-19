@@ -48,6 +48,11 @@ indice indiceGral;/* Aqui guardamos los indices de la matriz C para saber en que
 				sirve para movernos a traves de ella.*/
 
 void cargarMatriz(double *, int, int);
+void realizarTarea();
+void *mapearTarea(void *);
+void getIndice(int);
+double getTime();
+
 
 int main(int argc, char *argv[]){
 	
@@ -91,6 +96,7 @@ int main(int argc, char *argv[]){
 	pthread_setconcurrency(cant_hilos);
 	
 	t1=getTime();
+	//creamos un hilo por cada proceso y le mandamos su parte para multiplicar
 	for (i=0; i < cant_hilos-1; i++)
 		pthread_create(hilos+i, NULL, mapearTarea, NULL);
 	mapearTarea(NULL);
@@ -99,13 +105,12 @@ int main(int argc, char *argv[]){
 		pthread_join(hilos[i], NULL);
 
 	t2=getTime();
-	
+	//AK HAY ERROR
 	free(A);
 	free(B);
 	free(C);
+	printf("Duracion total de la multilplicacion de matrices %4f segundos\n", t2-t1);
 	
-	//creamos un hilo por cada proceso y le mandamos su parte para multiplicar
-	//sumamos resultado final
 	
 }
 void cargarMatriz(double X[], int fila, int columna){
@@ -120,7 +125,7 @@ void cargarMatriz(double X[], int fila, int columna){
 		}
 	}	
 }
-
+/*
 void sumarSubMatriz( indice indiceA, indice indiceB, indice indiceC )
 {
 	int i, j, k;
@@ -130,12 +135,12 @@ void sumarSubMatriz( indice indiceA, indice indiceB, indice indiceC )
 			for (k=0; k < SUBN; k++)
 				C[indiceC.i + i] [indiceC.j + j] += A[indiceA.i + i] [indiceA.j + k] * B[indiceB.i + k] [indiceB.j + j];
 }
-
+*/
 
 /**
  * Realiza la suma de todas las submatrices
  */
-void realizarTarea(int indi)
+void realizarTarea()
 {
 	int j, k;
 
@@ -169,13 +174,18 @@ void *mapearTarea(void *arg)
 		if ( tarea >= filasA*columnasB)
 			return NULL;
 
-		indice indi = getIndice(tarea);
-		realizarTarea(indi);
+		getIndice(tarea);
+		realizarTarea();
 	}
 }
-indice getIndice(int tarea)
+void getIndice(int tarea)
 {
 	indiceGral.i = (int)tarea%subnum;
-	return indi;
+	//return indi;
+}
+double getTime() {
+	struct timeval t;
+	gettimeofday(&t, NULL);
+	return (double)t.tv_sec+t.tv_usec*0.000001;
 }
 
