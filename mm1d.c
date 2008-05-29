@@ -162,6 +162,7 @@ void realizarTarea()
 	//indiceA.j += SUBN;
 	//indiceB.i += SUBN;
 	//Incrementamos aqui el valor para que la siguiente tarea, se mueva un lugar en la matriz C.
+	printf("indice de la tarea J %d \n", indiceGral.j);
 	indiceGral.j =indiceGral.j +1;
 
 }
@@ -183,6 +184,7 @@ void *mapearTarea(void *arg)
 			return NULL;
 
 		getIndice(tarea);
+		printf("indice de la tarea I %d \n", indiceGral.i);
 		realizarTarea();
 	}
 }
