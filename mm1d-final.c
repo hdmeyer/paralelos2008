@@ -28,9 +28,9 @@
 # include <stdlib.h>
 # include <pthread.h>
 # include <sys/time.h>
-# define filasA 4		/* Cantidad de filas de la matriz A */
-# define columnasB 5		/* Cantidad de columnas de la matriz A = Cantidad de filas de la matriz B */
-# define comunAB 3		/* Cantidad de columnas de la matriz B */
+# define filasA 10		/* Cantidad de filas de la matriz A */
+# define columnasB 10		/* Cantidad de columnas de la matriz A = Cantidad de filas de la matriz B */
+# define comunAB 10		/* Cantidad de columnas de la matriz B */
 
 static int n;	 	 // tamaño de la matriz
 static int bsize;	 //tamaño de la submatriz
@@ -165,12 +165,12 @@ void realizarTarea()
 	//printf("realizarTarea: %d...\n", tarea);
 	//printf("i-j: %d.-.%d\n", indi.i, indi.j);
 	// CORREGIMOS COLUMNASB POR COMUNAB
-	pthread_mutex_lock(&lock);
-	indiceGral.j += 1;
-	if(indiceGral.j == columnasB){
-		indiceGral.j = 0;
-	}
-	pthread_mutex_unlock(&lock);
+	//pthread_mutex_lock(&lock);
+	//indiceGral.j += 1;
+	//if(indiceGral.j == columnasB){
+	//	indiceGral.j = 0;
+	//}
+	//pthread_mutex_unlock(&lock);
 
 	for (k=0; k < comunAB; k++) {
 		pthread_mutex_lock(&lock);
@@ -220,7 +220,8 @@ void getIndice(int tarea)
 {	
 	cont++;
 	//pthread_mutex_lock(&lock);
-	indiceGral.i = (int)tarea%subnum;
+	indiceGral.i = (int)tarea / subnum;
+	indiceGral.j = (int)tarea % subnum;
 	//indiceGral.j += 1;
 	//if(indiceGral.j == columnasB){
 	//	indiceGral.j = 0;
