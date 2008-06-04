@@ -118,10 +118,12 @@ void cargarMatrices(){
  */
 void realizarTarea(indice indiceGral)
 {
-	int k;
+	int k,j;
 
-	for (k=0; k < comunAB; k++)
-		C[indiceGral.i][indiceGral.j] += A[indiceGral.i][k] * B[k][indiceGral.j];
+	for(j=0;j<columnasB;j++){
+		for (k=0; k < comunAB; k++)
+			C[indiceGral.i][j] += A[indiceGral.i][k] * B[k][j];
+	}
 	
 }
 
@@ -138,7 +140,7 @@ void *mapearTarea(void *arg)
 		    tarea++;
 		pthread_mutex_unlock(&lock);
 
-		if ( tarea >= filasA*columnasB)
+		if ( tarea >= filasA)
 			return NULL;
 
 		indice indiceGral = getIndice(tarea);
@@ -149,8 +151,8 @@ void *mapearTarea(void *arg)
 indice getIndice(int tarea)
 {	
 	indice indiceGral;
-	indiceGral.i = tarea / columnasB;
-	indiceGral.j = tarea % columnasB; 
+	indiceGral.i = tarea % filasA;
+	//indiceGral.j = tarea % columnasB; 
 	return indiceGral;
 }
 
