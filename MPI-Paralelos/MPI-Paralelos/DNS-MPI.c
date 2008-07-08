@@ -12,21 +12,21 @@ int id3D, tag =99;
 int A[n][n], B[n][n], C[n][n];
 
 
-void llenarMatriz(int m[SIZE][SIZE])
+void llenarMatriz(int m[n][n])
 {
-  static int n=0;
+  static int k=0;
   int i, j;
-  for (i=0; i<SIZE; i++)
-    for (j=0; j<SIZE; j++)
-      m[i][j] = n++;
+  for (i=0; i<n; i++)
+    for (j=0; j<n; j++)
+      m[i][j] = k++;
 }
 
-void imprimirMatriz(int m[SIZE][SIZE])
+void imprimirMatriz(int m[n][n])
 {
   int i, j = 0;
-  for (i=0; i<SIZE; i++) {
+  for (i=0; i<n; i++) {
     printf("\n\t| ");
-    for (j=0; j<SIZE; j++)
+    for (j=0; j<n; j++)
       printf("%2d ", m[i][j]);
     printf("|");
   }
@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano;
     int coords_envio[3];
     int rank_envio;
+    int i,j;
     MPI_Init(&argc, &argv);
 
     /* Cantidad de fil, col y plano = numero de procesos */
@@ -69,33 +70,39 @@ int main(int argc, char** argv) {
                 coords_envio[1] = j;
                 coords_envio[2] = 0;
                 MPI_Cart_rank(comm_3d, coords_envio, &rank_envio)
-                MPI_Send(A[i][j],1,MPI_INT, rank_envio, tag, comm_3d);
-                MPI_Send(B[i][j],1,MPI_INT, rank_envio, tag, comm_3d);
+                //ACA ENVIAMOS A CADA PROCESO CORRESPONDIENTE DEL PLANO
+                //0(DISTRIBUCIÓN N^2
+                MPI_Send(&A[i][j], 1, MPI_INT, rank_envio, 99, comm_3d);
+                MPI_Send(&B[i][j], 1, MPI_INT, rank_envio, 100, comm_3d);
 		    }
 		}
 
-		FALTA DESDE AKA...
 
-		for (i=0;i<nproc-1;i++) {
-			first = i*chunksize;
-			MPI_Send(A,chunksize,MPI_INT, i, tag, MPI_COMM_WORLD);
-		}
-		first =my_id*chunksize;i++;
-		chunksize=size-1;
-		sum =0;
-		for (i=first;i<chunksize;i++) sum = sum +a[i];
 
-		for (i=0;i<nproc-1;i++) {
-			MPI_Recv(&psum,1,MPI_DOUBLE, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
-			printf("Respondio %d - envio %10.0f\n", status.MPI_SOURCE,psum);
-			sum =sum +psum;
-		}
-		printf("Resultado de la suma = %10.0f\n", sum);
-	}else{
-		MPI_Recv(a, chunksize, MPI_INT, nproc-1, tag, MPI_COMM_WORLD,&status);
-		psum=0;
-		for (i=0;i<chunksize;i++) psum = psum +a[i];
-		MPI_Send(&psum, 1, MPI_DOUBLE, nproc-1, tag, MPI_COMM_WORLD);
+//		for (i=0;i<nproc-1;i++) {
+//			first = i*chunksize;
+//			MPI_Send(A,chunksize,MPI_INT, i, tag, MPI_COMM_WORLD);
+//		}
+//		first =my_id*chunksize;i++;
+//		chunksize=size-1;
+//		sum =0;
+//		for (i=first;i<chunksize;i++) sum = sum +a[i];
+//
+//		for (i=0;i<nproc-1;i++) {
+//			MPI_Recv(&psum,1,MPI_DOUBLE, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
+//			printf("Respondio %d - envio %10.0f\n", status.MPI_SOURCE,psum);
+//			sum =sum +psum;
+//		}
+//		printf("Resultado de la suma = %10.0f\n", sum);
+
+
+	}else if(mi_plano == 0){
+		MPI_Recv(A[mi_fila][mi_columna], 1, MPI_INT, 0, 99, comm_3d,&status);
+		MPI_Recv(B[mi_fila][mi_columna], 1, MPI_INT, 0, 100, comm_3d,&status);
+
+//		psum=0;
+//		for (i=0;i<chunksize;i++) psum = psum +a[i];
+//		MPI_Send(&psum, 1, MPI_DOUBLE, nproc-1, tag, MPI_COMM_WORLD);
 	}
 	MPI_Finalize();
 }
