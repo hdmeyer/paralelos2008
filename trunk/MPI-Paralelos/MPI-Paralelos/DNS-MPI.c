@@ -5,7 +5,7 @@ creado por la topología cartesiana */
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 3
+#define n 2
 int coords[3], dims[3], periods[3];
 MPI_Comm comm_3d;
 int id3D, tag =99;
@@ -35,41 +35,62 @@ void imprimirMatriz(int m[n][n])
 int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano;
     int coords_envio[3];
-    int rank_envio;
+    int rank_envio,size;
     int i,j;
-    MPI_Init(&argc, &argv);
+    MPI_Status status;
+    int buffA[1], buffB[1];
 
+
+    MPI_Init(&argc, &argv);
     /* Cantidad de fil, col y plano = numero de procesos */
     dims[0]=dims[1]=dims[2]=n;
     periods[0]=periods[1]=periods[2]= 1;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (size != n*n*n)
+    {
+        printf("Por favor corra con  %d procesos.\n", n*n*n);fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
     MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periods, 0, &comm_3d);
 
+
+    printf(" cart create \n");
     /* Obtiene mi nuevo id en 3D */
     MPI_Comm_rank(comm_3d, &id3D);
-
+    printf(" comm rank \n");
     /* Obtiene mis coordenadas */
     MPI_Cart_coords(comm_3d, id3D, 3, coords);
+    printf(" CART COORDS\n");
 
 
     mi_fila = coords[0];
     mi_columna= coords[1];
     mi_plano = coords[2];
 
+    printf(" mi fila %d \n", mi_fila);
+    printf(" mi columna %d \n", mi_columna);
+    printf(" mi plano %d \n", mi_plano);
+
 
     /*AHORA VERIFICAMOS SI SOMOS EL P[0][0][0] PARA CREAR LAS MATRICES Y EMPEZAR
     A DISTRIBUIR A LOS DEMAS PISOS*/
 	if(mi_fila == 0 && mi_columna == 0 && mi_plano == 0){
+	    printf("PROCESO PADRE \n");
 
         llenarMatriz(A);
         llenarMatriz(B);
 
+        imprimirMatriz(A);
+        printf("\n");
+        imprimirMatriz(B);
+
 		for (i=0; i<n; i++){
-		    for (j=0; i<n; j++){
+		    for (j=0; j<n; j++){
                 coords_envio[0] = i;
                 coords_envio[1] = j;
                 coords_envio[2] = 0;
-                MPI_Cart_rank(comm_3d, coords_envio, &rank_envio)
+                MPI_Cart_rank(comm_3d, coords_envio, &rank_envio);
                 //ACA ENVIAMOS A CADA PROCESO CORRESPONDIENTE DEL PLANO
                 //0(DISTRIBUCIÓN N^2
                 MPI_Send(&A[i][j], 1, MPI_INT, rank_envio, 99, comm_3d);
@@ -97,9 +118,11 @@ int main(int argc, char** argv) {
 
 
 	}else if(mi_plano == 0){
-		MPI_Recv(A[mi_fila][mi_columna], 1, MPI_INT, 0, 99, comm_3d,&status);
-		MPI_Recv(B[mi_fila][mi_columna], 1, MPI_INT, 0, 100, comm_3d,&status);
+		MPI_Recv(buffA, 1, MPI_INT, 0, 99, comm_3d,&status);
+		MPI_Recv(buffB, 1, MPI_INT, 0, 100, comm_3d,&status);
 
+		printf("RECIBIDO EN A[%d][%d][%d] --> %d\n ",mi_fila,mi_columna,mi_plano,buffA[0]);
+		printf("RECIBIDO EN B[%d][%d][%d] --> %d\n",mi_fila,mi_columna,mi_plano,buffB[0]);
 //		psum=0;
 //		for (i=0;i<chunksize;i++) psum = psum +a[i];
 //		MPI_Send(&psum, 1, MPI_DOUBLE, nproc-1, tag, MPI_COMM_WORLD);
