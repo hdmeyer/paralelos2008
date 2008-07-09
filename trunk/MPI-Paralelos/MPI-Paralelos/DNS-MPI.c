@@ -5,7 +5,7 @@ creado por la topología cartesiana */
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 2
+#define n 10
 int coords[3], dims[3], periods[3];
 MPI_Comm comm_3d;
 int id3D, tag =99;
@@ -121,11 +121,13 @@ int main(int argc, char** argv) {
 		MPI_Recv(buffA, 1, MPI_INT, 0, 99, comm_3d,&status);
 		MPI_Recv(buffB, 1, MPI_INT, 0, 100, comm_3d,&status);
 
-		printf("RECIBIDO EN A[%d][%d][%d] --> %d\n ",mi_fila,mi_columna,mi_plano,buffA[0]);
+		printf("RECIBIDO EN A[%d][%d][%d] --> %d\n",mi_fila,mi_columna,mi_plano,buffA[0]);
 		printf("RECIBIDO EN B[%d][%d][%d] --> %d\n",mi_fila,mi_columna,mi_plano,buffB[0]);
 //		psum=0;
 //		for (i=0;i<chunksize;i++) psum = psum +a[i];
 //		MPI_Send(&psum, 1, MPI_DOUBLE, nproc-1, tag, MPI_COMM_WORLD);
+
+        MPI_Send(&buffA, 1, MPI_INT, rank_envio, 99, comm_3d);
 	}
 	MPI_Finalize();
 }
