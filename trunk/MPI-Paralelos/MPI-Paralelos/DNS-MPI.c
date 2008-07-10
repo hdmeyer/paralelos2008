@@ -5,31 +5,31 @@ creado por la topología cartesiana */
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 10
+#define n 4
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
 MPI_Comm comm_3d;
 int id3D, tag =99;
-int A[n][n], B[n][n], C[n][n];
+float A[n][n], B[n][n], C[n][n];
 
 
-void llenarMatriz(int m[n][n])
+void llenarMatriz(float m[n][n])
 {
-  static int k=0;
+  static float k=0;
   int i, j;
   for (i=0; i<n; i++)
     for (j=0; j<n; j++)
       m[i][j] = k++;
 }
 
-void imprimirMatriz(int m[n][n])
+void imprimirMatriz(float m[n][n])
 {
   int i, j = 0;
   for (i=0; i<n; i++) {
     printf("\n\t| ");
     for (j=0; j<n; j++)
-      printf("%2d ", m[i][j]);
+      printf("%2f ", m[i][j]);
     printf("|");
   }
 }
@@ -38,15 +38,17 @@ int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano;
     int coords_envio[3];
     int rank_envio,size;
-    int i,j,k,l;
-    MPI_Status status;
-    int buffA[1], buffB[1];
+    int i,j,k,l, cont_fila, cont_columna;
+    MPI_Status statusA;
+    MPI_Status statusB;
+    //int buffA[1], buffB[1];
 
 
     MPI_Init(&argc, &argv);
     /* Cantidad de fil, col y plano = numero de procesos */
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    //dimension del nro de procesos
+
+    //dimension del nro de procesos(cantidad de bloques)
     double m = pow((double)size,(double) 1/3);
 
     if (n % (int)m !=0 )
@@ -55,12 +57,12 @@ int main(int argc, char** argv) {
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     int tam_subM = n/m;
-
-    dims[0]=dims[1]=dims[2]=n/size;
+    printf("EL VALOR M ES: %d",(int) m);
+    dims[0]=dims[1]=dims[2]=(int) m;
     periods[0]=periods[1]=periods[2]= 1;
 
-    int subm_A[tam_subM][tam_subM];
-    int subm_B[tam_subM][tam_subM];
+    float subm_A[tam_subM][tam_subM];
+    float subm_B[tam_subM][tam_subM];
 
     MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periods, 0, &comm_3d);
 
@@ -93,22 +95,30 @@ int main(int argc, char** argv) {
         imprimirMatriz(A);
         printf("\n");
         imprimirMatriz(B);
+        /*Aqui basicamente lo que hacemos es enviar a cada proceso del plano cero
+        una parte de A y B que es la que les corresponde, donde Pi,j,o tiene
+        A[i][j] y B[i][j]*/
 
-		for (i=0; m<; i++){
-		    for (j=0; j<m; j++){
+		for (i=0; i < m; i++){
+		    for (j=1; j<m; j++){
                 coords_envio[0] = i;
                 coords_envio[1] = j;
                 coords_envio[2] = 0;
+                cont_fila=-1;
                 for (k=i; k < i+tam_subM; k++){
+                    cont_fila++;
+                    cont_columna=0;
                     for (l=j; l < j+tam_subM; l++){
-
+                        subm_A[cont_fila][cont_columna]=A[k][l];
+                        subm_B[cont_fila][cont_columna]=B[k][l];
+                        cont_columna++;
                     }
                 }
                 MPI_Cart_rank(comm_3d, coords_envio, &rank_envio);
                 //ACA ENVIAMOS A CADA PROCESO CORRESPONDIENTE DEL PLANO
                 //0(DISTRIBUCIÓN N^2
-                MPI_Send(&A[i][j], 1, MPI_INT, rank_envio, 99, comm_3d);
-                MPI_Send(&B[i][j], 1, MPI_INT, rank_envio, 100, comm_3d);
+                MPI_Send(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 1, comm_3d);
+                MPI_Send(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 2, comm_3d);
 		    }
 		}
 
@@ -132,16 +142,16 @@ int main(int argc, char** argv) {
 
 
 	}else if(mi_plano == 0){
-		MPI_Recv(buffA, 1, MPI_INT, 0, 99, comm_3d,&status);
-		MPI_Recv(buffB, 1, MPI_INT, 0, 100, comm_3d,&status);
+		MPI_Recv(subm_A, tam_subM*tam_subM, MPI_FLOAT, 0, 1, comm_3d,&statusA);
+		MPI_Recv(subm_B, tam_subM*tam_subM, MPI_FLOAT, 0, 2, comm_3d,&statusB);
 
-		printf("RECIBIDO EN A[%d][%d][%d] --> %d\n",mi_fila,mi_columna,mi_plano,buffA[0]);
-		printf("RECIBIDO EN B[%d][%d][%d] --> %d\n",mi_fila,mi_columna,mi_plano,buffB[0]);
+		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
+		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
 //		psum=0;
 //		for (i=0;i<chunksize;i++) psum = psum +a[i];
 //		MPI_Send(&psum, 1, MPI_DOUBLE, nproc-1, tag, MPI_COMM_WORLD);
 
-        MPI_Send(&buffA, 1, MPI_INT, rank_envio, 99, comm_3d);
+        //MPI_Send(&buffA, 1, MPI_INT, rank_envio, 99, comm_3d);
 	}
 	MPI_Finalize();
 }
