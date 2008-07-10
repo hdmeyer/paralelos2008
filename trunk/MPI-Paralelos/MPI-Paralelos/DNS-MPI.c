@@ -6,6 +6,8 @@ creado por la topología cartesiana */
 #include <stdio.h>
 #include "mpi.h"
 #define n 10
+#include <math.h>
+
 int coords[3], dims[3], periods[3];
 MPI_Comm comm_3d;
 int id3D, tag =99;
@@ -36,24 +38,31 @@ int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano;
     int coords_envio[3];
     int rank_envio,size;
-    int i,j;
+    int i,j,k,l;
     MPI_Status status;
     int buffA[1], buffB[1];
 
 
     MPI_Init(&argc, &argv);
     /* Cantidad de fil, col y plano = numero de procesos */
-    dims[0]=dims[1]=dims[2]=n;
-    periods[0]=periods[1]=periods[2]= 1;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    if (size != n*n*n)
+    //dimension del nro de procesos
+    double m = pow((double)size,(double) 1/3);
+
+    if (n % (int)m !=0 )
     {
-        printf("Por favor corra con  %d procesos.\n", n*n*n);fflush(stdout);
+        printf("Por favor corra con una cantidad de procesos multiplo de %d.\n", n);fflush(stdout);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
+    int tam_subM = n/m;
+
+    dims[0]=dims[1]=dims[2]=n/size;
+    periods[0]=periods[1]=periods[2]= 1;
+
+    int subm_A[tam_subM][tam_subM];
+    int subm_B[tam_subM][tam_subM];
 
     MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periods, 0, &comm_3d);
-
 
     printf(" cart create \n");
     /* Obtiene mi nuevo id en 3D */
@@ -85,11 +94,16 @@ int main(int argc, char** argv) {
         printf("\n");
         imprimirMatriz(B);
 
-		for (i=0; i<n; i++){
-		    for (j=0; j<n; j++){
+		for (i=0; m<; i++){
+		    for (j=0; j<m; j++){
                 coords_envio[0] = i;
                 coords_envio[1] = j;
                 coords_envio[2] = 0;
+                for (k=i; k < i+tam_subM; k++){
+                    for (l=j; l < j+tam_subM; l++){
+
+                    }
+                }
                 MPI_Cart_rank(comm_3d, coords_envio, &rank_envio);
                 //ACA ENVIAMOS A CADA PROCESO CORRESPONDIENTE DEL PLANO
                 //0(DISTRIBUCIÓN N^2
