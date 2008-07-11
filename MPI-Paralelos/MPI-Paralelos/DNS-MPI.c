@@ -82,6 +82,7 @@ int main(int argc, char** argv) {
     printf(" mi fila %d \n", mi_fila);
     printf(" mi columna %d \n", mi_columna);
     printf(" mi plano %d \n", mi_plano);
+    printf(" MI RANKING %d \n", id3D);
 
 
     /*AHORA VERIFICAMOS SI SOMOS EL P[0][0][0] PARA CREAR LAS MATRICES Y EMPEZAR
@@ -100,25 +101,28 @@ int main(int argc, char** argv) {
         A[i][j] y B[i][j]*/
 
 		for (i=0; i < m; i++){
-		    for (j=1; j<m; j++){
-                coords_envio[0] = i;
-                coords_envio[1] = j;
-                coords_envio[2] = 0;
-                cont_fila=-1;
-                for (k=i; k < i+tam_subM; k++){
-                    cont_fila++;
-                    cont_columna=0;
-                    for (l=j; l < j+tam_subM; l++){
-                        subm_A[cont_fila][cont_columna]=A[k][l];
-                        subm_B[cont_fila][cont_columna]=B[k][l];
-                        cont_columna++;
+		    for (j=0; j<m; j++){
+                if(!(i==0 && j==0)){
+                    coords_envio[0] = i;
+                    coords_envio[1] = j;
+                    coords_envio[2] = 0;
+                    cont_fila=-1;
+                    for (k=i*tam_subM; k < i*tam_subM+tam_subM; k++){
+                        cont_fila++;
+                        cont_columna=0;
+                        for (l=j*tam_subM; l < j*tam_subM+tam_subM; l++){
+                            subm_A[cont_fila][cont_columna]=A[k][l];
+                            subm_B[cont_fila][cont_columna]=B[k][l];
+                            cont_columna++;
+                        }
                     }
+                    MPI_Cart_rank(comm_3d, coords_envio, &rank_envio);
+                    printf("RANKING AL Q ENVIO %d \n",rank_envio);
+                    //ACA ENVIAMOS A CADA PROCESO CORRESPONDIENTE DEL PLANO
+                    //0(DISTRIBUCIÓN N^2
+                    MPI_Send(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 1, comm_3d);
+                    MPI_Send(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 2, comm_3d);
                 }
-                MPI_Cart_rank(comm_3d, coords_envio, &rank_envio);
-                //ACA ENVIAMOS A CADA PROCESO CORRESPONDIENTE DEL PLANO
-                //0(DISTRIBUCIÓN N^2
-                MPI_Send(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 1, comm_3d);
-                MPI_Send(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 2, comm_3d);
 		    }
 		}
 
@@ -146,12 +150,14 @@ int main(int argc, char** argv) {
 		MPI_Recv(subm_B, tam_subM*tam_subM, MPI_FLOAT, 0, 2, comm_3d,&statusB);
 
 		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
+		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[(tam_subM-1)][(tam_subM-1)]);
 		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
+		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
 //		psum=0;
 //		for (i=0;i<chunksize;i++) psum = psum +a[i];
 //		MPI_Send(&psum, 1, MPI_DOUBLE, nproc-1, tag, MPI_COMM_WORLD);
-
-        //MPI_Send(&buffA, 1, MPI_INT, rank_envio, 99, comm_3d);
+//
+//        MPI_Send(&buffA, 1, MPI_INT, rank_envio, 99, comm_3d);
 	}
 	MPI_Finalize();
 }
