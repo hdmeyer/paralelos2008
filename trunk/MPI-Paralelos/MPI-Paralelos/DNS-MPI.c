@@ -9,7 +9,7 @@ creado por la topología cartesiana */
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
-MPI_Comm comm_3d;
+MPI_Comm comm_3d, comm_col, comm_fil;
 int id3D, tag =99;
 float A[n][n], B[n][n], C[n][n];
 
@@ -36,7 +36,7 @@ void imprimirMatriz(float m[n][n])
 
 int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano;
-    int coords_envio[3];
+    int coords_envio[3], coords_recepcion[3], vector_logico[3];
     int rank_envio,size;
     int i,j,k,l, cont_fila, cont_columna;
     MPI_Status statusA;
@@ -125,6 +125,13 @@ int main(int argc, char** argv) {
                 }
 		    }
 		}
+		/*CARGO lo QUE CORRESPONDE AL PROCESO 0*/
+		for (k=0; k<tam_subM; k++){
+            for (l=0;l < tam_subM; l++){
+                subm_A[k][l]=A[k][l];
+                subm_B[k][l]=B[k][l];
+            }
+        }
 
 
 
@@ -149,15 +156,96 @@ int main(int argc, char** argv) {
 		MPI_Recv(subm_A, tam_subM*tam_subM, MPI_FLOAT, 0, 1, comm_3d,&statusA);
 		MPI_Recv(subm_B, tam_subM*tam_subM, MPI_FLOAT, 0, 2, comm_3d,&statusB);
 
-		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
-		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[(tam_subM-1)][(tam_subM-1)]);
-		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
-		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
+//		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
+//		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[(tam_subM-1)][(tam_subM-1)]);
+//		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
+//		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
 //		psum=0;
 //		for (i=0;i<chunksize;i++) psum = psum +a[i];
 //		MPI_Send(&psum, 1, MPI_DOUBLE, nproc-1, tag, MPI_COMM_WORLD);
 //
 //        MPI_Send(&buffA, 1, MPI_INT, rank_envio, 99, comm_3d);
 	}
+	/*TODO LO HECHO ARRIBA PERMITIO DISTRIBUIR LOS BLOQUES EN EL PRIMER PLANO*/
+
+	/*A PARTIR DE AK VERIFICAMOS LOS PLANOS EN LOS QUE ESTAMOS Y HACEMOS LA OPERACION CORRECTA, ES DECIR
+	SI ESTAMOS EN EL PLANO 0, ENVIAMOS A LOS DEMAS PLANOS LAS PARTES DE A Y B QUE CORRESPONDEN.*/
+
+	if(mi_plano == 0){
+	    /*AQUI LO QUE HACEMOS ES ENVIAR LOS SUB-BLOQUES DE A, DE ACUERDO A LAS
+	    COLUMNAS A DONDE CORRESPONDA Pijk = Aijj.*/
+        if (mi_columna != 0) {
+            coords_envio[0] = mi_fila;
+            coords_envio[1] = mi_columna;
+            coords_envio[2] = mi_columna;
+            MPI_Cart_rank(comm_3d, coords_envio, &rank_envio);
+            MPI_Send(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 99, comm_3d);
+        }
+
+        /*AQUI LO QUE HACEMOS ES ENVIAR LOS SUB-BLOQUES DE B, DE ACUERDO A LAS
+	    FILAS A DONDE CORRESPONDA Pijk = Biji.*/
+        if (mi_fila != 0) {
+            coords_envio[0] = mi_fila;
+            coords_envio[1] = mi_columna;
+            coords_envio[2] = mi_fila;
+            MPI_Cart_rank(comm_3d, coords_envio, &rank_envio);
+            MPI_Send(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 100, comm_3d);
+        }
+
+    /*SI ESTOy EN OTRO PLANO QUIERE DECIR Q TENGO QUE RECIBIR EL BLOQUE Q SE ME ESTA ENVIANDO*/
+	}else{
+	    /*RECIBIMOS SIEMPRE DE UN PROCESO DEL PLANO 0*/
+	    coords_recepcion[2] = 0;
+	    coords_recepcion[0] = mi_fila;
+	    coords_recepcion[1] = mi_columna;
+	    MPI_Cart_rank(comm_3d, coords_recepcion, &rank_envio);
+        if (mi_columna == mi_plano) {
+            MPI_Recv(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 99, comm_3d, &statusA);
+        }
+        if (mi_fila == mi_plano) {
+            MPI_Recv(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 100, comm_3d, &statusB);
+        }
+	}
+	/*LUEGO DE HABER RECIBIDO NUESTRA PARTE, LO QUE DEBEMOS HACER EN EL CASO DE A ES
+            REPARTIR MEDIANTE UN BROADCAST A TODA MI FILA*/
+    vector_logico[0] = 0;
+    vector_logico[1] = 1;
+    vector_logico[2] = 0;
+    printf("ENTRE PARA REPARTIR A \n");
+    MPI_Cart_sub(comm_3d, vector_logico, &comm_col);
+    MPI_Bcast(subm_A, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_col);
+
+    vector_logico[0] = 1;
+    vector_logico[1] = 0;
+    vector_logico[2] = 0;
+    printf("ENTRE PARA REPARTIR B \n");
+    MPI_Cart_sub(comm_3d, vector_logico, &comm_fil);
+    MPI_Bcast(subm_B, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_fil);
+//	if(mi_columna == mi_plano){
+//	    //llenamos el vector logico para crear el subcomunicador
+//	    vector_logico[0] = 0;
+//        vector_logico[1] = 1;
+//        vector_logico[2] = 0;
+//        printf("ENTRE PARA REPARTIR A \n");
+//        MPI_Cart_sub(comm_3d, vector_logico, &comm_col);
+//        MPI_Bcast(subm_A, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_col);
+//	}
+//	/*LUEGO DE HABER RECIBIDO NUESTRA PARTE, LO QUE DEBEMOS HACER EN EL CASO DE B ES
+//            REPARTIR MEDIANTE UN BROADCAST A MI FILA*/
+//
+//	if(mi_fila == mi_plano){
+//	    //llenamos el vector logico para crear el subcomunicador
+//        vector_logico[0] = 1;
+//        vector_logico[1] = 0;
+//        vector_logico[2] = 0;
+//        printf("ENTRE PARA REPARTIR B \n");
+//        MPI_Cart_sub(comm_3d, vector_logico, &comm_fil);
+//        MPI_Bcast(subm_B, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_fil);
+//	}
+    printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
+	printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[(tam_subM-1)][(tam_subM-1)]);
+	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
+	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
+
 	MPI_Finalize();
 }
