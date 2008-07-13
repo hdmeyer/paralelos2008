@@ -5,7 +5,7 @@ creado por la topología cartesiana */
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 6
+#define n 9
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
