@@ -9,7 +9,7 @@ creado por la topología cartesiana */
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
-MPI_Comm comm_3d, comm_col, comm_fil;
+MPI_Comm comm_3d, comm_col, comm_fil, comm_reduccion;
 int id3D, tag =99;
 float A[n][n], B[n][n], C[n][n];
 
@@ -63,7 +63,8 @@ int main(int argc, char** argv) {
 
     float subm_A[tam_subM][tam_subM];
     float subm_B[tam_subM][tam_subM];
-
+    float subm_C[tam_subM][tam_subM];
+    float subm_C_Plano0[tam_subM][tam_subM];
     MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periods, 0, &comm_3d);
 
     printf(" cart create \n");
@@ -221,6 +222,8 @@ int main(int argc, char** argv) {
     printf("ENTRE PARA REPARTIR B \n");
     MPI_Cart_sub(comm_3d, vector_logico, &comm_fil);
     MPI_Bcast(subm_B, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_fil);
+
+
 //	if(mi_columna == mi_plano){
 //	    //llenamos el vector logico para crear el subcomunicador
 //	    vector_logico[0] = 0;
@@ -242,10 +245,34 @@ int main(int argc, char** argv) {
 //        MPI_Cart_sub(comm_3d, vector_logico, &comm_fil);
 //        MPI_Bcast(subm_B, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_fil);
 //	}
+
+    /*AHORA REALIZAMOS EL COMPUTO DE CADA SUB-MATRIZ QUE RECIBIMOS*/
+    for (i = 0; i < tam_subM; i++) {
+        for (j = 0; j < tam_subM; j++) {
+            for (k = 0;  k < tam_subM; k++) {
+                subm_C[i][j] += subm_A[i][k] * subm_B[k][j];
+            }
+        }
+    }
+
+    /*UNA VEZ COMPUTADO EL CALCULO DE LAS SUBMATRICES PROCEDEMOS A REDUCIR
+    TODO AL PLANO 1, CREANDO UNA SUBTOPOLOGÍA PARA HACER, Y REALIZAMOS LA SUMA DE
+    LAS SECCIONES QUE CORRESPONDEN*/
+    vector_logico[0] = 0;
+    vector_logico[1] = 0;
+    vector_logico[2] = 1;
+    MPI_Cart_sub(comm_3d, vector_logico, &comm_reduccion);
+
+    MPI_Reduce(subm_C, subm_C_Plano0, tam_subM*tam_subM, MPI_FLOAT, MPI_SUM, 0, comm_reduccion);
+
     printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
 	printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[(tam_subM-1)][(tam_subM-1)]);
 	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
 	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
+
+	if(mi_plano == 0){
+        printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[0][0]);
+	}
 
 	MPI_Finalize();
 }
