@@ -5,7 +5,7 @@ creado por la topología cartesiana */
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 4
+#define n 6
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
@@ -29,6 +29,16 @@ void imprimirMatriz(float m[n][n])
   for (i=0; i<n; i++) {
     printf("\n\t| ");
     for (j=0; j<n; j++)
+      printf("%2f ", m[i][j]);
+    printf("|");
+  }
+}
+void imprimirSubMatriz(float m[3][3])
+{
+  int i, j = 0;
+  for (i=0; i<3; i++) {
+    printf("\n\t| ");
+    for (j=0; j<3; j++)
       printf("%2f ", m[i][j]);
     printf("|");
   }
@@ -58,6 +68,7 @@ int main(int argc, char** argv) {
     }
     int tam_subM = n/m;
     printf("EL VALOR M ES: %d",(int) m);
+    printf("EL VALOR TAMSUBM ES: %d",(int) tam_subM);
     dims[0]=dims[1]=dims[2]=(int) m;
     periods[0]=periods[1]=periods[2]= 1;
 
@@ -85,6 +96,13 @@ int main(int argc, char** argv) {
     printf(" mi plano %d \n", mi_plano);
     printf(" MI RANKING %d \n", id3D);
 
+    /*inicializamos submatrices C*/
+    for (i=0; i<tam_subM; i++){
+        for (j=0; j<tam_subM; j++){
+            subm_C[i][j] =0;
+            subm_C_Plano0[i][j] =0;
+        }
+    }
 
     /*AHORA VERIFICAMOS SI SOMOS EL P[0][0][0] PARA CREAR LAS MATRICES Y EMPEZAR
     A DISTRIBUIR A LOS DEMAS PISOS*/
@@ -224,28 +242,6 @@ int main(int argc, char** argv) {
     MPI_Bcast(subm_B, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_fil);
 
 
-//	if(mi_columna == mi_plano){
-//	    //llenamos el vector logico para crear el subcomunicador
-//	    vector_logico[0] = 0;
-//        vector_logico[1] = 1;
-//        vector_logico[2] = 0;
-//        printf("ENTRE PARA REPARTIR A \n");
-//        MPI_Cart_sub(comm_3d, vector_logico, &comm_col);
-//        MPI_Bcast(subm_A, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_col);
-//	}
-//	/*LUEGO DE HABER RECIBIDO NUESTRA PARTE, LO QUE DEBEMOS HACER EN EL CASO DE B ES
-//            REPARTIR MEDIANTE UN BROADCAST A MI FILA*/
-//
-//	if(mi_fila == mi_plano){
-//	    //llenamos el vector logico para crear el subcomunicador
-//        vector_logico[0] = 1;
-//        vector_logico[1] = 0;
-//        vector_logico[2] = 0;
-//        printf("ENTRE PARA REPARTIR B \n");
-//        MPI_Cart_sub(comm_3d, vector_logico, &comm_fil);
-//        MPI_Bcast(subm_B, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_fil);
-//	}
-
     /*AHORA REALIZAMOS EL COMPUTO DE CADA SUB-MATRIZ QUE RECIBIMOS*/
     for (i = 0; i < tam_subM; i++) {
         for (j = 0; j < tam_subM; j++) {
@@ -272,6 +268,14 @@ int main(int argc, char** argv) {
 
 	if(mi_plano == 0){
         printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[0][0]);
+        //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[(tam_subM-1)][(tam_subM-1)]);
+
+        printf("SUBMATRIZ A/n");
+        imprimirSubMatriz(subm_A);
+        printf("SUBMATRIZ B/n");
+        imprimirSubMatriz(subm_B);
+        printf("SUBMATRIZ C/n");
+        imprimirSubMatriz(subm_C_Plano0);
 	}
 
 	MPI_Finalize();
