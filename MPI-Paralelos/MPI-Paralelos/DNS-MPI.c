@@ -1,7 +1,3 @@
-/*Se crea una grilla (mesh) lógica de procesos implementada
-con la topología cartesiana de MPI (MPI_Cart_create) en 3 dimensiones.
-Estos procesos son etiquetados desde P0,0,0 a Pn,n,n en un nuevo comunicador (comm_3D)
-creado por la topología cartesiana */
 
 #include <stdio.h>
 #include "mpi.h"
