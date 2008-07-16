@@ -47,11 +47,9 @@ int main(int argc, char** argv) {
     int i,j,k,l, cont_fila, cont_columna;
     MPI_Status statusA;
     MPI_Status statusB;
-    //int buffA[1], buffB[1];
 
 
     MPI_Init(&argc, &argv);
-    /* Cantidad de fil, col y plano = numero de procesos */
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     //dimension del nro de procesos(cantidad de bloques)
@@ -147,24 +145,6 @@ int main(int argc, char** argv) {
                 subm_B[k][l]=B[k][l];
             }
         }
-
-
-
-//		for (i=0;i<nproc-1;i++) {
-//			first = i*chunksize;
-//			MPI_Send(A,chunksize,MPI_INT, i, tag, MPI_COMM_WORLD);
-//		}
-//		first =my_id*chunksize;i++;
-//		chunksize=size-1;
-//		sum =0;
-//		for (i=first;i<chunksize;i++) sum = sum +a[i];
-//
-//		for (i=0;i<nproc-1;i++) {
-//			MPI_Recv(&psum,1,MPI_DOUBLE, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
-//			printf("Respondio %d - envio %10.0f\n", status.MPI_SOURCE,psum);
-//			sum =sum +psum;
-//		}
-//		printf("Resultado de la suma = %10.0f\n", sum);
 
 
 	}else if(mi_plano == 0){
