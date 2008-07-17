@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "mpi.h"
-#define n 9
+#define n 1000
 #include <math.h>
 
 int mi_id, rank_envio;
@@ -39,8 +39,10 @@ void imprimirSubMatriz(float m[3][3])
 int main(int argc, char** argv) {
     /*DEFINICIONES DE DATOS E INICIALIZACIONES*/
     int mi_fila, mi_columna, fila_recepcion, col_recepcion;
+    double timeIni, timeFin;
     int rank_envio,size,destino,fuente;
     int i,j,k,l, cont_fila, cont_columna, ciclos;
+    FILE *fp;
     MPI_Status statusA;
     MPI_Status statusB;
     MPI_Status statusC;
@@ -104,13 +106,14 @@ int main(int argc, char** argv) {
             }
         }
 
-        imprimirMatriz(A);
+        //imprimirMatriz(A);
         printf("\n");
-        imprimirMatriz(B);
+        //imprimirMatriz(B);
 
         /*Ahora basicamente lo que hacemos es enviar a cada proceso del plano cero
         una parte de A y B que es la que les corresponde, enviamos a cada uno ya con la distribución
         inicial para que puedan empezar multiplicando*/
+        timeIni = MPI_Wtime();
         for (i=0; i < m; i++){
 		    for (j=0; j<m; j++){
                 if(!(i==0 && j==0)){
@@ -212,7 +215,7 @@ int main(int argc, char** argv) {
 
         MPI_Send(subm_C,tam_subM*tam_subM,MPI_FLOAT,0,mi_id,comm2d);
 	}
-//AK ESTA EL ERROR
+
 	if(mi_id == 0){
 	    for (i=0; i<n; i++){
             for (j=0; j<n; j++){
@@ -248,9 +251,19 @@ int main(int argc, char** argv) {
             }
         }
         printf("AK EMPIEZO A IMPRIMIR\n");
-        imprimirMatriz(C);
-	}
+        timeFin = MPI_Wtime();
 
+        if((fp=freopen("ResultadosCannon.txt", "w" ,stdout))==NULL) {
+            printf("NO PUEDO ABRIR ARCHIVO.\n");
+            exit(1);
+        }
+
+        printf("IMPRESION FINAL DE LA MATRIZ C\n.");
+        printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
+        imprimirMatriz(C);
+        fclose(fp);
+        //imprimirMatriz(C);
+	}
 
     MPI_Finalize();
 }
