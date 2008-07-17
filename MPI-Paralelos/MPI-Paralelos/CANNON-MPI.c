@@ -98,6 +98,12 @@ int main(int argc, char** argv) {
 	    llenarMatriz(A);
         llenarMatriz(B);
 
+        for (i=0; i<n; i++){
+            for (j=0; j<n; j++){
+                C[i][j] =0;
+            }
+        }
+
         imprimirMatriz(A);
         printf("\n");
         imprimirMatriz(B);
@@ -172,6 +178,8 @@ int main(int argc, char** argv) {
             MPI_Cart_shift(comm2d,0,-1,&fuente,&destino);
             MPI_Sendrecv_replace(subm_B,tam_subM*tam_subM,MPI_FLOAT,destino,2,fuente,2,comm2d,&statusB);
         }
+        printf("PROCESO 0 MATRIZ C FINAL:\n");
+        imprimirSubMatriz(subm_C);
 
 	}
 	else{
@@ -199,29 +207,39 @@ int main(int argc, char** argv) {
 
         /*AHORA LO QUE HACEMOS ES ENVIAR AL PROCESO MAESTRO EL RESULTADO FINAL QUE OBTUVIMOS PARA NUESTRA
         SUBMATRIZ C*/
+        //printf("MI ID--> %d\n", mi_id);
+        //imprimirSubMatriz(subm_C);
 
         MPI_Send(subm_C,tam_subM*tam_subM,MPI_FLOAT,0,mi_id,comm2d);
 	}
 //AK ESTA EL ERROR
 	if(mi_id == 0){
+	    for (i=0; i<n; i++){
+            for (j=0; j<n; j++){
+                C[i][j] =0;
+            }
+        }
 	    /*RECIBIMOS Y ESTABLECEMOS CADA SUBMATRIZ C EN LA PARTE QUE CORRESPONDE*/
+        //MPI_Barrier(comm2d);
 	    for(i=1; i < size; i++)
 		{
 			MPI_Recv(subm_C_aux,tam_subM*tam_subM, MPI_FLOAT,MPI_ANY_SOURCE,MPI_ANY_TAG,comm2d,&statusC);
 			MPI_Cart_coords(comm2d,statusC.MPI_TAG,2, coords_envio);
 
+			printf("RECIBIMOS DE [%d][%d] -->\n",coords_envio[0],coords_envio[1]);
+			imprimirSubMatriz(subm_C_aux);
 			fila_recepcion = coords_envio[0];
-			fila_recepcion = coords_envio[1];
+			col_recepcion = coords_envio[1];
 			cont_columna =0;
 			cont_fila =-1;
-//			for(j=fila_recepcion*tam_subM; j<fila_recepcion*tam_subM+tam_subM; j++){
-//			    cont_fila++;
-//				for(k=col_recepcion*tam_subM; k<col_recepcion*tam_subM+tam_subM; k++){
-//					C[j][k]= subm_C_aux[cont_fila][cont_columna];
-//					cont_columna++;
-//				}
-//				cont_columna=0;
-//			}
+			for(j=fila_recepcion*tam_subM; j<fila_recepcion*tam_subM+tam_subM; j++){
+			    cont_fila++;
+				for(k=col_recepcion*tam_subM; k<col_recepcion*tam_subM+tam_subM; k++){
+					C[j][k]= subm_C_aux[cont_fila][cont_columna];
+					cont_columna++;
+				}
+				cont_columna=0;
+			}
 		}
 		/*AHORA ESTABLECEMOS LO QUE COMPUTO EL PROCESO 0*/
 		for (k=0; k<tam_subM; k++){
@@ -229,6 +247,8 @@ int main(int argc, char** argv) {
                 C[k][l]=subm_C[k][l];
             }
         }
+        printf("AK EMPIEZO A IMPRIMIR\n");
+        imprimirMatriz(C);
 	}
 
 
