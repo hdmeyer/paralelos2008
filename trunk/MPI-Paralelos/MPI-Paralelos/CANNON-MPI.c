@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "mpi.h"
-#define n 1000
+#define n 300
 #include <math.h>
 
 int mi_id, rank_envio;
@@ -129,18 +129,18 @@ int main(int argc, char** argv) {
                             cont_columna++;
                         }
                     }
-                    /*calculamos el envio para A*/
-                    /*Lo que se hace es modificar la coordenada referente
-                    a la columna para enviar A al Pi,j que corresponde y luego
-                    en la recepcion ya puede proceder directamente a la multiplicacion*/
+//                    /*calculamos el envio para A*/
+//                    /*Lo que se hace es modificar la coordenada referente
+//                    a la columna para enviar A al Pi,j que corresponde y luego
+//                    en la recepcion ya puede proceder directamente a la multiplicacion*/
                     coords_envio[0] = i;
                     coords_envio[1] = j-i;
                     if(coords_envio[1] < 0){
                         coords_envio[1] = coords_envio[1] + m;
                     }
                     MPI_Cart_rank(comm2d, coords_envio, &rank_envio);
-                    printf("RANKING AL Q ENVIO A %d \n",rank_envio);
-                    MPI_Send(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 1, comm2d);
+                    //printf("RANKING AL Q ENVIO A %d \n",rank_envio);
+                    MPI_Send(subm_A, (tam_subM*tam_subM), MPI_FLOAT, rank_envio, 1, comm2d);
 
                     /*calculamos el envio para B*/
                     /*Lo que se hace es modificar la coordenada referente
@@ -152,8 +152,8 @@ int main(int argc, char** argv) {
                         coords_envio[0] = coords_envio[0] + m;
                     }
                     MPI_Cart_rank(comm2d, coords_envio, &rank_envio);
-                    printf("RANKING AL Q ENVIO B %d \n",rank_envio);
-                    MPI_Send(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 2, comm2d);
+                    //printf("RANKING AL Q ENVIO B %d \n",rank_envio);
+                    MPI_Send(subm_B, (tam_subM*tam_subM), MPI_FLOAT, rank_envio, 2, comm2d);
                 }
 		    }
 		}
@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
             MPI_Sendrecv_replace(subm_B,tam_subM*tam_subM,MPI_FLOAT,destino,2,fuente,2,comm2d,&statusB);
         }
         printf("PROCESO 0 MATRIZ C FINAL:\n");
-        imprimirSubMatriz(subm_C);
+        //imprimirSubMatriz(subm_C);
 
 	}
 	else{
@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
         printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
         imprimirMatriz(C);
         fclose(fp);
-        //imprimirMatriz(C);
+        imprimirMatriz(C);
 	}
 
     MPI_Finalize();
