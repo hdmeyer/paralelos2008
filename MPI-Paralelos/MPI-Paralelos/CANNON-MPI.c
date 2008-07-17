@@ -38,11 +38,12 @@ void imprimirSubMatriz(float m[3][3])
 }
 int main(int argc, char** argv) {
     /*DEFINICIONES DE DATOS E INICIALIZACIONES*/
-    int mi_fila, mi_columna;
+    int mi_fila, mi_columna, fila_recepcion, col_recepcion;
     int rank_envio,size,destino,fuente;
     int i,j,k,l, cont_fila, cont_columna, ciclos;
     MPI_Status statusA;
     MPI_Status statusB;
+    MPI_Status statusC;
 
 	MPI_Comm comm2d;
 
@@ -66,6 +67,7 @@ int main(int argc, char** argv) {
     float subm_A[tam_subM][tam_subM];
     float subm_B[tam_subM][tam_subM];
     float subm_C[tam_subM][tam_subM];
+    float subm_C_aux[tam_subM][tam_subM];
     /*EN ESTE CASO SOLO ES DE DOS DIMENSIONES*/
     MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodos, 0, &comm2d);
 
@@ -170,7 +172,9 @@ int main(int argc, char** argv) {
             MPI_Cart_shift(comm2d,0,-1,&fuente,&destino);
             MPI_Sendrecv_replace(subm_B,tam_subM*tam_subM,MPI_FLOAT,destino,2,fuente,2,comm2d,&statusB);
         }
-	}else{
+
+	}
+	else{
 	    /*LOS OTROS PROCESOS RECIBEN SUS VALORES Y VAN HACIENDO SHIFT Y ENVIANDO A LOS DEMAS PARA
 	    QUE CADA UNO COMPUTE SU PARTE*/
 
@@ -193,9 +197,40 @@ int main(int argc, char** argv) {
             MPI_Sendrecv_replace(subm_B,tam_subM*tam_subM,MPI_FLOAT,destino,2,fuente,2,comm2d,&statusB);
         }
 
-        //FALTA ENVIAR TODAS LAS PARTES AL PROCESO 0 PARA ALMACENAR EN LA MATRIZ C*/
+        /*AHORA LO QUE HACEMOS ES ENVIAR AL PROCESO MAESTRO EL RESULTADO FINAL QUE OBTUVIMOS PARA NUESTRA
+        SUBMATRIZ C*/
 
+        MPI_Send(subm_C,tam_subM*tam_subM,MPI_FLOAT,0,mi_id,comm2d);
 	}
+//AK ESTA EL ERROR
+	if(mi_id == 0){
+	    /*RECIBIMOS Y ESTABLECEMOS CADA SUBMATRIZ C EN LA PARTE QUE CORRESPONDE*/
+	    for(i=1; i < size; i++)
+		{
+			MPI_Recv(subm_C_aux,tam_subM*tam_subM, MPI_FLOAT,MPI_ANY_SOURCE,MPI_ANY_TAG,comm2d,&statusC);
+			MPI_Cart_coords(comm2d,statusC.MPI_TAG,2, coords_envio);
+
+			fila_recepcion = coords_envio[0];
+			fila_recepcion = coords_envio[1];
+			cont_columna =0;
+			cont_fila =-1;
+//			for(j=fila_recepcion*tam_subM; j<fila_recepcion*tam_subM+tam_subM; j++){
+//			    cont_fila++;
+//				for(k=col_recepcion*tam_subM; k<col_recepcion*tam_subM+tam_subM; k++){
+//					C[j][k]= subm_C_aux[cont_fila][cont_columna];
+//					cont_columna++;
+//				}
+//				cont_columna=0;
+//			}
+		}
+		/*AHORA ESTABLECEMOS LO QUE COMPUTO EL PROCESO 0*/
+		for (k=0; k<tam_subM; k++){
+            for (l=0;l < tam_subM; l++){
+                C[k][l]=subm_C[k][l];
+            }
+        }
+	}
+
 
     MPI_Finalize();
 }
