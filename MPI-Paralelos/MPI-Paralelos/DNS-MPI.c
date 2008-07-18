@@ -44,6 +44,7 @@ int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano;
     int coords_envio[3], coords_recepcion[3], vector_logico[3];
     int rank_envio,size;
+    double timeIni, timeFin;
     int i,j,k,l, cont_fila, cont_columna;
     MPI_Status statusA;
     MPI_Status statusB;
@@ -106,12 +107,14 @@ int main(int argc, char** argv) {
         llenarMatriz(A);
         llenarMatriz(B);
 
-        imprimirMatriz(A);
+        //imprimirMatriz(A);
         printf("\n");
-        imprimirMatriz(B);
+        //imprimirMatriz(B);
         /*Aqui basicamente lo que hacemos es enviar a cada proceso del plano cero
         una parte de A y B que es la que les corresponde, donde Pi,j,o tiene
         A[i][j] y B[i][j]*/
+
+        timeIni = MPI_Wtime();
 
 		for (i=0; i < m; i++){
 		    for (j=0; j<m; j++){
@@ -247,11 +250,14 @@ int main(int argc, char** argv) {
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[(tam_subM-1)][(tam_subM-1)]);
 
         printf("SUBMATRIZ A/n");
-        imprimirSubMatriz(subm_A);
+        //imprimirSubMatriz(subm_A);
         printf("SUBMATRIZ B/n");
-        imprimirSubMatriz(subm_B);
+        //imprimirSubMatriz(subm_B);
         printf("SUBMATRIZ C/n");
         imprimirSubMatriz(subm_C_Plano0);
+        timeFin = MPI_Wtime();
+        printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
+
 	}
 
 	MPI_Finalize();
