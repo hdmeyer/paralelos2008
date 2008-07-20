@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
         printf("\n");
         //imprimirMatriz(B);
 
-        /*Ahora basicamente lo que hacemos es enviar a cada proceso del plano cero
+        /*Ahora basicamente lo que hacemos es enviar a cada proceso
         una parte de A y B que es la que les corresponde, enviamos a cada uno ya con la distribución
         inicial para que puedan empezar multiplicando*/
         timeIni = MPI_Wtime();
