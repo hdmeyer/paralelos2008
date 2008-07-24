@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 9
+#define n 1500
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
@@ -43,7 +43,7 @@ void imprimirSubMatriz(float m[3][3])
 int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano;
     int coords_envio[3], coords_recepcion[3], vector_logico[3];
-    int rank_envio,size;
+    int rank_envio,size, valor_matriz;
     double timeIni, timeFin;
     int i,j,k,l, cont_fila, cont_columna;
     MPI_Status statusA;
@@ -99,77 +99,23 @@ int main(int argc, char** argv) {
         }
     }
 
-    /*AHORA VERIFICAMOS SI SOMOS EL P[0][0][0] PARA CREAR LAS MATRICES Y EMPEZAR
+    timeIni = MPI_Wtime();
+
+    /*AHORA VERIFICAMOS SI SOMOS del PLANO 0 PARA CREAR LAS MATRICES Y EMPEZAR
     A DISTRIBUIR A LOS DEMAS PISOS*/
-	if(mi_fila == 0 && mi_columna == 0 && mi_plano == 0){
-	    printf("PROCESO PADRE \n");
-
-        llenarMatriz(A);
-        llenarMatriz(B);
-
-        //imprimirMatriz(A);
-        printf("\n");
-        //imprimirMatriz(B);
-        /*Aqui basicamente lo que hacemos es enviar a cada proceso del plano cero
-        una parte de A y B que es la que les corresponde, donde Pi,j,o tiene
-        A[i][j] y B[i][j]*/
-
-        timeIni = MPI_Wtime();
-
-		for (i=0; i < m; i++){
-		    for (j=0; j<m; j++){
-                if(!(i==0 && j==0)){
-                    coords_envio[0] = i;
-                    coords_envio[1] = j;
-                    coords_envio[2] = 0;
-                    cont_fila=-1;
-                    for (k=i*tam_subM; k < i*tam_subM+tam_subM; k++){
-                        cont_fila++;
-                        cont_columna=0;
-                        for (l=j*tam_subM; l < j*tam_subM+tam_subM; l++){
-                            subm_A[cont_fila][cont_columna]=A[k][l];
-                            subm_B[cont_fila][cont_columna]=B[k][l];
-                            cont_columna++;
-                        }
-                    }
-                    MPI_Cart_rank(comm_3d, coords_envio, &rank_envio);
-                    printf("RANKING AL Q ENVIO %d \n",rank_envio);
-                    //ACA ENVIAMOS A CADA PROCESO CORRESPONDIENTE DEL PLANO
-                    //0(DISTRIBUCIÓN N^2
-                    MPI_Send(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 1, comm_3d);
-                    MPI_Send(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 2, comm_3d);
-                }
-		    }
-		}
-		/*CARGO lo QUE CORRESPONDE AL PROCESO 0*/
-		for (k=0; k<tam_subM; k++){
-            for (l=0;l < tam_subM; l++){
-                subm_A[k][l]=A[k][l];
-                subm_B[k][l]=B[k][l];
-            }
-        }
-
-
-	}else if(mi_plano == 0){
-		MPI_Recv(subm_A, tam_subM*tam_subM, MPI_FLOAT, 0, 1, comm_3d,&statusA);
-		MPI_Recv(subm_B, tam_subM*tam_subM, MPI_FLOAT, 0, 2, comm_3d,&statusB);
-
-//		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
-//		printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[(tam_subM-1)][(tam_subM-1)]);
-//		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
-//		printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
-//		psum=0;
-//		for (i=0;i<chunksize;i++) psum = psum +a[i];
-//		MPI_Send(&psum, 1, MPI_DOUBLE, nproc-1, tag, MPI_COMM_WORLD);
-//
-//        MPI_Send(&buffA, 1, MPI_INT, rank_envio, 99, comm_3d);
-	}
-	/*TODO LO HECHO ARRIBA PERMITIO DISTRIBUIR LOS BLOQUES EN EL PRIMER PLANO*/
 
 	/*A PARTIR DE AK VERIFICAMOS LOS PLANOS EN LOS QUE ESTAMOS Y HACEMOS LA OPERACION CORRECTA, ES DECIR
 	SI ESTAMOS EN EL PLANO 0, ENVIAMOS A LOS DEMAS PLANOS LAS PARTES DE A Y B QUE CORRESPONDEN.*/
 
 	if(mi_plano == 0){
+	    valor_matriz=1;
+        for (k=0; k<tam_subM; k++){
+            for (l=0;l < tam_subM; l++){
+                subm_A[k][l]=valor_matriz*id3D;
+                subm_B[k][l]=valor_matriz*id3D;
+                valor_matriz++;
+            }
+        }
 	    /*AQUI LO QUE HACEMOS ES ENVIAR LOS SUB-BLOQUES DE A, DE ACUERDO A LAS
 	    COLUMNAS A DONDE CORRESPONDA Pijk = Aijj.*/
         if (mi_columna != 0) {
@@ -244,9 +190,9 @@ int main(int argc, char** argv) {
 	printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[(tam_subM-1)][(tam_subM-1)]);
 	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
 	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
-
-	if(mi_plano == 0){
-        printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[0][0]);
+    //MPI_Barrier(comm_3d);
+	if(id3D == 0){
+        //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[0][0]);
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[(tam_subM-1)][(tam_subM-1)]);
 
         printf("SUBMATRIZ A/n");
@@ -254,7 +200,7 @@ int main(int argc, char** argv) {
         printf("SUBMATRIZ B/n");
         //imprimirSubMatriz(subm_B);
         printf("SUBMATRIZ C/n");
-        imprimirSubMatriz(subm_C_Plano0);
+        //imprimirSubMatriz(subm_C_Plano0);
         timeFin = MPI_Wtime();
         printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
 
