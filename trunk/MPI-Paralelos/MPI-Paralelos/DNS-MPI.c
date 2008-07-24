@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 2500
+#define n 800
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
@@ -67,9 +67,21 @@ int main(int argc, char** argv) {
     dims[0]=dims[1]=dims[2]=(int) m;
     periods[0]=periods[1]=periods[2]= 1;
 
-    float subm_A[tam_subM][tam_subM];
-    float subm_B[tam_subM][tam_subM];
-    float subm_C[tam_subM][tam_subM];
+//    float subm_A[tam_subM][tam_subM];
+//    float subm_B[tam_subM][tam_subM];
+//    float subm_C[tam_subM][tam_subM];
+    float **subm_A;
+    float **subm_B;
+    float **subm_C;
+    subm_A= (float **) malloc ( tam_subM * sizeof(float) );
+    subm_B= (float **) malloc ( tam_subM * sizeof(float) );
+    subm_C= (float **) malloc ( tam_subM * sizeof(float) );
+    for (i = 0; i < tam_subM; i++) {
+		subm_A[i] = (float *) malloc ( tam_subM * sizeof(float) );
+		subm_B[i] = (float *) malloc ( tam_subM * sizeof(float) );
+		subm_C[i] = (float *) malloc ( tam_subM * sizeof(float) );
+ 	}
+
     MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periods, 0, &comm_3d);
 
     printf(" cart create \n");
@@ -182,12 +194,17 @@ int main(int argc, char** argv) {
     vector_logico[1] = 0;
     vector_logico[2] = 1;
     MPI_Cart_sub(comm_3d, vector_logico, &comm_reduccion);
-    float subm_C_Plano0[tam_subM][tam_subM];
-    for (i=0; i<tam_subM; i++){
-        for (j=0; j<tam_subM; j++){
-            subm_C_Plano0[i][j] =0;
-        }
-    }
+//    float subm_C_Plano0[tam_subM][tam_subM];
+//    for (i=0; i<tam_subM; i++){
+//        for (j=0; j<tam_subM; j++){
+//            subm_C_Plano0[i][j] =0;
+//        }
+//    }
+    float **subm_C_Plano0;
+    subm_C_Plano0= (float **) malloc ( tam_subM * sizeof(float) );
+    for (i = 0; i < tam_subM; i++) {
+		subm_C_Plano0[i] = (float *) malloc ( tam_subM * sizeof(float) );
+ 	}
     MPI_Reduce(subm_C, subm_C_Plano0, tam_subM*tam_subM, MPI_FLOAT, MPI_SUM, 0, comm_reduccion);
 
     printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
@@ -195,6 +212,10 @@ int main(int argc, char** argv) {
 	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
 	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
     //MPI_Barrier(comm_3d);
+    MPI_Comm_free(&comm_3d);
+    MPI_Comm_free(&comm_col);
+    MPI_Comm_free(&comm_fil);
+    MPI_Comm_free(&comm_reduccion);
 	if(id3D == 0){
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[0][0]);
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[(tam_subM-1)][(tam_subM-1)]);
@@ -209,6 +230,21 @@ int main(int argc, char** argv) {
         printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
 
 	}
+	if(mi_plano == 0){
+        for (i = 0; i < tam_subM; i++) {
+            free(subm_C_Plano0[i]);
+        }
+        free(subm_C_Plano0);
+	}
+
+	for (i = 0; i < tam_subM; i++) {
+            free(subm_C[i]);
+            free(subm_B[i]);
+            free(subm_A[i]);
+    }
+    free(subm_C);
+    free(subm_A);
+    free(subm_B);
 
 	MPI_Finalize();
 }
