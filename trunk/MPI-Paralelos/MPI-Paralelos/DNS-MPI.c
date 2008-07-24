@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 10
+#define n 512
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
@@ -47,8 +47,8 @@ int main(int argc, char** argv) {
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     int tam_subM = n/m;
-    printf("EL VALOR M ES: %d",(int) m);
-    printf("EL VALOR TAMSUBM ES: %d",(int) tam_subM);
+    //printf("EL VALOR M ES: %d",(int) m);
+    //printf("EL VALOR TAMSUBM ES: %d",(int) tam_subM);
     dims[0]=dims[1]=dims[2]=(int) m;
     periods[0]=periods[1]=periods[2]= 1;
 
@@ -61,27 +61,27 @@ int main(int argc, char** argv) {
 //    dimensionar(subm_A, tam_subM);
 //    dimensionar(subm_B, tam_subM);
 //    dimensionar(subm_C, tam_subM);
-    printf("DESPUES DE DIMENSIONAR");
+    //printf("DESPUES DE DIMENSIONAR");
 
     MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periods, 0, &comm_3d);
 
-    printf(" cart create \n");
+    //printf(" cart create \n");
     /* Obtiene mi nuevo id en 3D */
     MPI_Comm_rank(comm_3d, &id3D);
-    printf(" comm rank \n");
+    //printf(" comm rank \n");
     /* Obtiene mis coordenadas */
     MPI_Cart_coords(comm_3d, id3D, 3, coords);
-    printf(" CART COORDS\n");
+    //printf(" CART COORDS\n");
 
 
     mi_fila = coords[0];
     mi_columna= coords[1];
     mi_plano = coords[2];
 
-    printf(" mi fila %d \n", mi_fila);
-    printf(" mi columna %d \n", mi_columna);
-    printf(" mi plano %d \n", mi_plano);
-    printf(" MI RANKING %d \n", id3D);
+//    printf(" mi fila %d \n", mi_fila);
+//    printf(" mi columna %d \n", mi_columna);
+//    printf(" mi plano %d \n", mi_plano);
+//    printf(" MI RANKING %d \n", id3D);
 
     /*inicializamos submatrices C*/
     subm_A = (float **) malloc ( tam_subM* sizeof(float) );
@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
     vector_logico_col[0] = 0;
     vector_logico_col[1] = 1;
     vector_logico_col[2] = 0;
-    printf("ENTRE PARA REPARTIR A \n");
+    //printf("ENTRE PARA REPARTIR A \n");
     MPI_Cart_sub(comm_3d, vector_logico_col, &comm_col);
 
     MPI_Bcast(subm_A, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_col);
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
     vector_logico_filas[0] = 1;
     vector_logico_filas[1] = 0;
     vector_logico_filas[2] = 0;
-    printf("ENTRE PARA REPARTIR B \n");
+    //printf("ENTRE PARA REPARTIR B \n");
     MPI_Cart_sub(comm_3d, vector_logico_filas, &comm_fil);
 
     MPI_Bcast(subm_B, tam_subM*tam_subM, MPI_FLOAT, mi_plano, comm_fil);
@@ -226,11 +226,11 @@ int main(int argc, char** argv) {
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[0][0]);
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[(tam_subM-1)][(tam_subM-1)]);
 
-        printf("SUBMATRIZ A/n");
+        //printf("SUBMATRIZ A/n");
         //imprimirSubMatriz(subm_A);
-        printf("SUBMATRIZ B/n");
+        //printf("SUBMATRIZ B/n");
         //imprimirSubMatriz(subm_B);
-        printf("SUBMATRIZ C/n");
+        //printf("SUBMATRIZ C/n");
         //imprimirSubMatriz(subm_C_Plano0);
         timeFin = MPI_Wtime();
         printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
@@ -240,16 +240,16 @@ int main(int argc, char** argv) {
 //        for (i = 0; i < tam_subM; i++) {
 //            free(subm_C_Plano0[i]);
 //        }
-//        free(subm_C_Plano0);
 //	}
 //	for (i = 0; i < tam_subM; i++) {
 //        free(subm_C[i]);
+//    }
+//    for (i = 0; i < tam_subM; i++) {
 //        free(subm_A[i]);
+//    }
+//    for (i = 0; i < tam_subM; i++) {
 //        free(subm_B[i]);
 //    }
-//    free(subm_C);
-//    free(subm_A);
-//    free(subm_B);
 
     MPI_Comm_free(&comm_3d);
 
