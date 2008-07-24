@@ -1,41 +1,41 @@
 #include <stdio.h>
 #include "mpi.h"
-#define n 2500
+#define n 2000
 #include <math.h>
 
 int mi_id, rank_envio;
-float A[n][n], B[n][n], C[n][n];
+//float A[n][n], B[n][n], C[n][n];
 int coords[2], dims[2], periodos[2], coords_envio[2];
 
-void llenarMatriz(float m[n][n])
-{
-  static float k=0;
-  int i, j;
-  for (i=0; i<n; i++)
-    for (j=0; j<n; j++)
-      m[i][j] = k++;
-}
-
-void imprimirMatriz(float m[n][n])
-{
-  int i, j = 0;
-  for (i=0; i<n; i++) {
-    printf("\n\t| ");
-    for (j=0; j<n; j++)
-      printf("%2f ", m[i][j]);
-    printf("|");
-  }
-}
-void imprimirSubMatriz(float m[3][3])
-{
-  int i, j = 0;
-  for (i=0; i<3; i++) {
-    printf("\n\t| ");
-    for (j=0; j<3; j++)
-      printf("%2f ", m[i][j]);
-    printf("|");
-  }
-}
+//void llenarMatriz(float m[n][n])
+//{
+//  static float k=0;
+//  int i, j;
+//  for (i=0; i<n; i++)
+//    for (j=0; j<n; j++)
+//      m[i][j] = k++;
+//}
+//
+//void imprimirMatriz(float m[n][n])
+//{
+//  int i, j = 0;
+//  for (i=0; i<n; i++) {
+//    printf("\n\t| ");
+//    for (j=0; j<n; j++)
+//      printf("%2f ", m[i][j]);
+//    printf("|");
+//  }
+//}
+//void imprimirSubMatriz(float m[3][3])
+//{
+//  int i, j = 0;
+//  for (i=0; i<3; i++) {
+//    printf("\n\t| ");
+//    for (j=0; j<3; j++)
+//      printf("%2f ", m[i][j]);
+//    printf("|");
+//  }
+//}
 int main(int argc, char** argv) {
     /*DEFINICIONES DE DATOS E INICIALIZACIONES*/
     int mi_fila, mi_columna, fila_recepcion, col_recepcion;
