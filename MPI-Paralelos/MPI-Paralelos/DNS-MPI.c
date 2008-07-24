@@ -1,44 +1,44 @@
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 1500
+#define n 2500
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
 MPI_Comm comm_3d, comm_col, comm_fil, comm_reduccion;
 int id3D, tag =99;
-float A[n][n], B[n][n], C[n][n];
+//float A[n][n], B[n][n], C[n][n];
 
 
-void llenarMatriz(float m[n][n])
-{
-  static float k=0;
-  int i, j;
-  for (i=0; i<n; i++)
-    for (j=0; j<n; j++)
-      m[i][j] = k++;
-}
-
-void imprimirMatriz(float m[n][n])
-{
-  int i, j = 0;
-  for (i=0; i<n; i++) {
-    printf("\n\t| ");
-    for (j=0; j<n; j++)
-      printf("%2f ", m[i][j]);
-    printf("|");
-  }
-}
-void imprimirSubMatriz(float m[3][3])
-{
-  int i, j = 0;
-  for (i=0; i<3; i++) {
-    printf("\n\t| ");
-    for (j=0; j<3; j++)
-      printf("%2f ", m[i][j]);
-    printf("|");
-  }
-}
+//void llenarMatriz(float m[n][n])
+//{
+//  static float k=0;
+//  int i, j;
+//  for (i=0; i<n; i++)
+//    for (j=0; j<n; j++)
+//      m[i][j] = k++;
+//}
+//
+//void imprimirMatriz(float m[n][n])
+//{
+//  int i, j = 0;
+//  for (i=0; i<n; i++) {
+//    printf("\n\t| ");
+//    for (j=0; j<n; j++)
+//      printf("%2f ", m[i][j]);
+//    printf("|");
+//  }
+//}
+//void imprimirSubMatriz(float m[3][3])
+//{
+//  int i, j = 0;
+//  for (i=0; i<3; i++) {
+//    printf("\n\t| ");
+//    for (j=0; j<3; j++)
+//      printf("%2f ", m[i][j]);
+//    printf("|");
+//  }
+//}
 
 int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano;
@@ -70,7 +70,6 @@ int main(int argc, char** argv) {
     float subm_A[tam_subM][tam_subM];
     float subm_B[tam_subM][tam_subM];
     float subm_C[tam_subM][tam_subM];
-    float subm_C_Plano0[tam_subM][tam_subM];
     MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periods, 0, &comm_3d);
 
     printf(" cart create \n");
@@ -95,7 +94,7 @@ int main(int argc, char** argv) {
     for (i=0; i<tam_subM; i++){
         for (j=0; j<tam_subM; j++){
             subm_C[i][j] =0;
-            subm_C_Plano0[i][j] =0;
+            //subm_C_Plano0[i][j] =0;
         }
     }
 
@@ -183,7 +182,12 @@ int main(int argc, char** argv) {
     vector_logico[1] = 0;
     vector_logico[2] = 1;
     MPI_Cart_sub(comm_3d, vector_logico, &comm_reduccion);
-
+    float subm_C_Plano0[tam_subM][tam_subM];
+    for (i=0; i<tam_subM; i++){
+        for (j=0; j<tam_subM; j++){
+            subm_C_Plano0[i][j] =0;
+        }
+    }
     MPI_Reduce(subm_C, subm_C_Plano0, tam_subM*tam_subM, MPI_FLOAT, MPI_SUM, 0, comm_reduccion);
 
     printf("RECIBIDO EN A[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_A[0][0]);
