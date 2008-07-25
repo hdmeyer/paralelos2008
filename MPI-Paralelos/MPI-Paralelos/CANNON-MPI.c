@@ -22,7 +22,7 @@ void imprimirMatriz(float **m, int tam)
   for (i=0; i<tam; i++) {
     printf("\n\t| ");
     for (j=0; j<tam; j++)
-      printf("%2f ", m[i][j]);
+      printf("%f ", m[i][j]);
     printf("|");
   }
 }
@@ -99,14 +99,16 @@ int main(int argc, char** argv) {
     /*inicializamos submatriz C*/
     for (i=0; i<tam_subM; i++){
         for (j=0; j<tam_subM; j++){
+            subm_A[i][j] =0;
+            subm_B[i][j] =0;
             subm_C[i][j] =0;
         }
     }
 printf("\n\n-------------------------------------------------- %i\n",tam_subM);fflush(stdout);
+    float **A;
+    float **B;
     if(mi_id == 0)
 	{
-	    float **A;
-	    float **B;
 	    A = (float **) malloc ( n* sizeof(float) );
 	    B = (float **) malloc ( n* sizeof(float) );
 
@@ -160,8 +162,9 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                         coords_envio[1] = coords_envio[1] + m;
                     }
                     MPI_Cart_rank(comm2d, coords_envio, &rank_envio);
-                    //printf("RANKING AL Q ENVIO A %d \n",rank_envio);
-                    MPI_Send(subm_A, (tam_subM*tam_subM), MPI_FLOAT, rank_envio, 1, comm2d);
+                    printf("RANKING AL Q ENVIO A %d \n",rank_envio);
+                    imprimirMatriz(subm_A,tam_subM);
+                    MPI_Send(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 1, comm2d);
 
                     /*calculamos el envio para B*/
                     /*Lo que se hace es modificar la coordenada referente
@@ -173,8 +176,9 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                         coords_envio[0] = coords_envio[0] + m;
                     }
                     MPI_Cart_rank(comm2d, coords_envio, &rank_envio);
-                    //printf("RANKING AL Q ENVIO B %d \n",rank_envio);
-                    MPI_Send(subm_B, (tam_subM*tam_subM), MPI_FLOAT, rank_envio, 2, comm2d);
+                    printf("RANKING AL Q ENVIO B %d \n",rank_envio);
+                    imprimirMatriz(subm_B,tam_subM);
+                    MPI_Send(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 2, comm2d);
                 }
 		    }
 		}
@@ -216,7 +220,18 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
 	    MPI_Recv(subm_A, tam_subM*tam_subM, MPI_FLOAT, 0, 1, comm2d, &statusA);
 
 		MPI_Recv(subm_B,tam_subM*tam_subM,MPI_FLOAT,0,2,comm2d,&statusB);
-		//printf("\n\nCADA PROCESO RECIBIO SU SUBMATRIZ,ID--------------- %i\n",mi_id);fflush(stdout);
+		printf("\n\nCADA PROCESO RECIBIO SU SUBMATRIZ,ID--------------- %i\n",mi_id);fflush(stdout);
+		printf("\nSUBMATRIZ A RECIBIDA EN %D",mi_id);
+		for (i=0; i<tam_subM; i++) {
+            printf("\n\t| ");
+            for (j=0; j<tam_subM; j++){
+                printf("%f ", subm_B[i][j]);
+                printf("|");
+            }
+        }
+//		imprimirMatriz(subm_A,tam_subM);
+//		printf("\nSUBMATRIZ B RECIBIDA EN %D",mi_id);
+//		imprimirMatriz(subm_B,tam_subM);
 
 		for (ciclos = 0; ciclos < tam_subM; ciclos++) {
             for (i = 0; i < tam_subM; i++) {
@@ -236,7 +251,7 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
         /*AHORA LO QUE HACEMOS ES ENVIAR AL PROCESO MAESTRO EL RESULTADO FINAL QUE OBTUVIMOS PARA NUESTRA
         SUBMATRIZ C*/
         //printf("MI ID--> %d\n", mi_id);
-        //imprimirSubMatriz(subm_C);
+        //imprimirMatriz(subm_C,tam_subM);
 
         MPI_Send(subm_C,tam_subM*tam_subM,MPI_FLOAT,0,mi_id,comm2d);
 	}
@@ -304,11 +319,11 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
 
         printf("IMPRESION FINAL DE LA MATRIZ C\n.");
         printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
-        //imprimirMatriz(A,n);
+        imprimirMatriz(A,n);
         printf("\n");
-        //imprimirMatriz(B,n);
+        imprimirMatriz(B,n);
         printf("\n");
-        imprimirMatriz(C,n);
+        //imprimirMatriz(C,n);
         fclose(fp);
         //imprimirMatriz(C);
 	}
