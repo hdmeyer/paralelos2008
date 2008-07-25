@@ -37,17 +37,19 @@ void imprimirMatriz(float m[n][n])
       printf("%2f ", m[i][j]);
     printf("|");
   }
+  printf("\n");
 }
-//void imprimirSubMatriz(float m[3][3])
-//{
-//  int i, j = 0;
-//  for (i=0; i<3; i++) {
-//    printf("\n\t| ");
-//    for (j=0; j<3; j++)
-//      printf("%2f ", m[i][j]);
-//    printf("|");
-//  }
-//}
+void imprimirSubMatriz(float m[tam_sum][tam_sum])
+{
+  int i, j = 0;
+  for (i=0; i<tam_sum; i++) {
+    printf("\n\t| ");
+    for (j=0; j<tam_sum; j++)
+      printf("%2f ", m[i][j]);
+    printf("|");
+  }
+  printf("\n");
+}
 int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano, fila_recepcion, col_recepcion;
     int coords_envio[3], coords_recepcion[3], vector_logico[3];
@@ -119,7 +121,7 @@ int main(int argc, char** argv) {
 	SI ESTAMOS EN EL PLANO 0, ENVIAMOS A LOS DEMAS PLANOS LAS PARTES DE A Y B QUE CORRESPONDEN.*/
 
 	if(mi_plano == 0){
-	    valor_matriz=1;
+	    valor_matriz=5;
 
         for (k=0; k<tam_subM; k++){
             for (l=0;l < tam_subM; l++){
@@ -127,6 +129,7 @@ int main(int argc, char** argv) {
                 subm_B[k][l]=valor_matriz;
                 valor_matriz++;
             }
+            valor_matriz =5;
         }
 	    /*AQUI LO QUE HACEMOS ES ENVIAR LOS SUB-BLOQUES DE A, DE ACUERDO A LAS
 	    COLUMNAS A DONDE CORRESPONDA Pijk = Aijj.*/
@@ -216,7 +219,11 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
     //MPI_Barrier(comm_3d);
     if(imprimir ==1 && mi_plano ==0){
         MPI_Send(subm_C_Plano0, tam_subM*tam_subM, MPI_FLOAT, 0, id3D, comm_3d);
+        //printf("Matriz Resultado plano 0 P[%d][%d] \n",mi_fila,mi_columna);
+        //imprimirSubMatriz(subm_C_Plano0);
+        printf("\n");
     }
+    MPI_Barrier(comm_3d);
 	if(id3D == 0){
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[0][0]);
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[(tam_subM-1)][(tam_subM-1)]);
@@ -225,7 +232,7 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
         float B[n][n];
         float C[n][n];
 
-        valor_matriz=1;
+
         int aux = tam_subM;
         if(imprimir == 1){
             for (i=0; i<n; i++){
@@ -233,10 +240,11 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                     C[i][j] =0;
                 }
             }
-            for(i=1; i < m*m; i++){
-                MPI_Recv(subm_C_aux,tam_subM*tam_subM, MPI_FLOAT,MPI_ANY_SOURCE,85,comm_3d,&statusC);
+            int m_int = (int) m;
+            for(i=0; i < m_int*m_int; i++){
+                MPI_Recv(subm_C_aux,tam_subM*tam_subM, MPI_FLOAT,MPI_ANY_SOURCE,MPI_ANY_TAG,comm_3d,&statusC);
                 MPI_Cart_coords(comm_3d, statusC.MPI_TAG ,3, coords_envio);
-                printf("RECIBIMOS DE [%d][%d] -->\n",coords_envio[0],coords_envio[1]);
+                //printf("RECIBIMOS DE [%d][%d] -->\n",coords_envio[0],coords_envio[1]);
                 fila_recepcion = coords_envio[0];
                 col_recepcion = coords_envio[1];
                 cont_columna =0;
@@ -251,23 +259,26 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                 }
             }
         }
+        valor_matriz=5;
         for (k=0; k<n; k++){
             for (l=0;l < n; l++){
-                if(k == (aux-1) && l == (aux-1)){
-                    valor_matriz =1;
-                    aux = aux+aux;
+                if(l == aux){
+                    valor_matriz =5;
+                    //aux = aux+aux;
                 }
                 A[k][l]=valor_matriz;
                 B[k][l]=valor_matriz;
                 valor_matriz++;
             }
+            valor_matriz =5;
         }
+
         if(imprimir ==1){
-            printf("SUBMATRIZ A/n");
+            printf("MATRIZ A/n");
             imprimirMatriz(A);
-            printf("SUBMATRIZ B/n");
+            printf("MATRIZ B/n");
             imprimirMatriz(B);
-            printf("SUBMATRIZ C/n");
+            printf("MATRIZ C/n");
             imprimirMatriz(C);
         }
         timeFin = MPI_Wtime();
