@@ -1,8 +1,9 @@
 
 #include <stdio.h>
 #include "mpi.h"
-#define n 1000
-#define tam_sum 500
+#define n 10
+#define tam_sum 5
+#define imprimir 1
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
@@ -13,6 +14,7 @@ static float subm_A[tam_sum][tam_sum];
 static float subm_B[tam_sum][tam_sum];
 static float subm_C[tam_sum][tam_sum];
 static float subm_C_Plano0[tam_sum][tam_sum];
+static float subm_C_aux[tam_sum][tam_sum];
 
 //float A[n][n], B[n][n], C[n][n];
 
@@ -26,16 +28,16 @@ static float subm_C_Plano0[tam_sum][tam_sum];
 //      m[i][j] = k++;
 //}
 //
-//void imprimirMatriz(float m[n][n])
-//{
-//  int i, j = 0;
-//  for (i=0; i<n; i++) {
-//    printf("\n\t| ");
-//    for (j=0; j<n; j++)
-//      printf("%2f ", m[i][j]);
-//    printf("|");
-//  }
-//}
+void imprimirMatriz(float m[n][n])
+{
+  int i, j = 0;
+  for (i=0; i<n; i++) {
+    printf("\n\t| ");
+    for (j=0; j<n; j++)
+      printf("%2f ", m[i][j]);
+    printf("|");
+  }
+}
 //void imprimirSubMatriz(float m[3][3])
 //{
 //  int i, j = 0;
@@ -46,15 +48,15 @@ static float subm_C_Plano0[tam_sum][tam_sum];
 //    printf("|");
 //  }
 //}
-
 int main(int argc, char** argv) {
-    int mi_fila, mi_columna, mi_plano;
+    int mi_fila, mi_columna, mi_plano, fila_recepcion, col_recepcion;
     int coords_envio[3], coords_recepcion[3], vector_logico[3];
     int rank_envio,size, valor_matriz;
     double timeIni, timeFin;
     int i,j,k,l, cont_fila, cont_columna;
     MPI_Status statusA;
     MPI_Status statusB;
+    MPI_Status statusC;
 
 	MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -121,8 +123,8 @@ int main(int argc, char** argv) {
 
         for (k=0; k<tam_subM; k++){
             for (l=0;l < tam_subM; l++){
-                subm_A[k][l]=valor_matriz*id3D;
-                subm_B[k][l]=valor_matriz*id3D;
+                subm_A[k][l]=valor_matriz;
+                subm_B[k][l]=valor_matriz;
                 valor_matriz++;
             }
         }
@@ -212,16 +214,62 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
 //	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[0][0]);
 //	printf("RECIBIDO EN B[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_B[(tam_subM-1)][(tam_subM-1)]);
     //MPI_Barrier(comm_3d);
+    if(imprimir ==1 && mi_plano ==0){
+        MPI_Send(subm_C_Plano0, tam_subM*tam_subM, MPI_FLOAT, 0, id3D, comm_3d);
+    }
 	if(id3D == 0){
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[0][0]);
         //printf("RECIBIDO EN C[%d][%d][%d] --> %2f\n",mi_fila,mi_columna,mi_plano,subm_C_Plano0[(tam_subM-1)][(tam_subM-1)]);
+        /*GENERO DE VUELTA LAS MATRICES A Y B*/
+        float A[n][n];
+        float B[n][n];
+        float C[n][n];
 
-        printf("SUBMATRIZ A/n");
-        //imprimirSubMatriz(subm_A);
-        printf("SUBMATRIZ B/n");
-        //imprimirSubMatriz(subm_B);
-        printf("SUBMATRIZ C/n");
-        //imprimirSubMatriz(subm_C_Plano0);
+        valor_matriz=1;
+        int aux = tam_subM;
+        if(imprimir == 1){
+            for (i=0; i<n; i++){
+                for (j=0; j<n; j++){
+                    C[i][j] =0;
+                }
+            }
+            for(i=1; i < m*m; i++){
+                MPI_Recv(subm_C_aux,tam_subM*tam_subM, MPI_FLOAT,MPI_ANY_SOURCE,85,comm_3d,&statusC);
+                MPI_Cart_coords(comm_3d, statusC.MPI_TAG ,3, coords_envio);
+                printf("RECIBIMOS DE [%d][%d] -->\n",coords_envio[0],coords_envio[1]);
+                fila_recepcion = coords_envio[0];
+                col_recepcion = coords_envio[1];
+                cont_columna =0;
+                cont_fila =-1;
+                for(j=fila_recepcion*tam_subM; j<fila_recepcion*tam_subM+tam_subM; j++){
+                    cont_fila++;
+                    for(k=col_recepcion*tam_subM; k<col_recepcion*tam_subM+tam_subM; k++){
+                        C[j][k]= subm_C_aux[cont_fila][cont_columna];
+                        cont_columna++;
+                    }
+                    cont_columna=0;
+                }
+            }
+        }
+        for (k=0; k<n; k++){
+            for (l=0;l < n; l++){
+                if(k == (aux-1) && l == (aux-1)){
+                    valor_matriz =1;
+                    aux = aux+aux;
+                }
+                A[k][l]=valor_matriz;
+                B[k][l]=valor_matriz;
+                valor_matriz++;
+            }
+        }
+        if(imprimir ==1){
+            printf("SUBMATRIZ A/n");
+            imprimirMatriz(A);
+            printf("SUBMATRIZ B/n");
+            imprimirMatriz(B);
+            printf("SUBMATRIZ C/n");
+            imprimirMatriz(C);
+        }
         timeFin = MPI_Wtime();
         printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
 
