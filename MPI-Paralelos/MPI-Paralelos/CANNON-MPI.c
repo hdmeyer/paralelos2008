@@ -1,41 +1,41 @@
 #include <stdio.h>
 #include "mpi.h"
-#define n 10
+#define n 4
 #include <math.h>
 
 int mi_id, rank_envio;
-//float A[n][n], B[n][n], C[n][n];
+float A[n][n], B[n][n], C[n][n];
 int coords[2], dims[2], periodos[2], coords_envio[2];
 
-void llenarMatriz(float **m, int tam)
+void llenarMatriz(float m[n][n])
 {
   static float k=0;
   int i, j;
-  for (i=0; i<tam; i++)
-    for (j=0; j<tam; j++)
+  for (i=0; i<n; i++)
+    for (j=0; j<n; j++)
       m[i][j] = k++;
 }
 
-void imprimirMatriz(float **m, int tam)
+void imprimirMatriz(float m[n][n])
 {
   int i, j = 0;
-  for (i=0; i<tam; i++) {
+  for (i=0; i<n; i++) {
     printf("\n\t| ");
-    for (j=0; j<tam; j++)
-      printf("%f ", m[i][j]);
+    for (j=0; j<n; j++)
+      printf("%2f ", m[i][j]);
     printf("|");
   }
 }
-//void imprimirSubMatriz(float m[3][3])
-//{
-//  int i, j = 0;
-//  for (i=0; i<3; i++) {
-//    printf("\n\t| ");
-//    for (j=0; j<3; j++)
-//      printf("%2f ", m[i][j]);
-//    printf("|");
-//  }
-//}
+void imprimirSubMatriz(float m[3][3])
+{
+  int i, j = 0;
+  for (i=0; i<3; i++) {
+    printf("\n\t| ");
+    for (j=0; j<3; j++)
+      printf("%2f ", m[i][j]);
+    printf("|");
+  }
+}
 int main(int argc, char** argv) {
     /*DEFINICIONES DE DATOS E INICIALIZACIONES*/
     int mi_fila, mi_columna, fila_recepcion, col_recepcion;
@@ -66,9 +66,10 @@ int main(int argc, char** argv) {
     dims[0]=dims[1]=(int) m;
     periodos[0]=periodos[1]=1;
 
-    float **subm_A;
-    float **subm_B;
-    float **subm_C;
+    float subm_A[tam_subM][tam_subM];
+    float subm_B[tam_subM][tam_subM];
+    float subm_C[tam_subM][tam_subM];
+    float subm_C_aux[tam_subM][tam_subM];
     /*EN ESTE CASO SOLO ES DE DOS DIMENSIONES*/
     MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodos, 0, &comm2d);
 
@@ -87,47 +88,23 @@ int main(int argc, char** argv) {
     printf(" mi columna %d \n", mi_columna);
     printf(" MI RANKING %d \n", mi_id);
 
-    /*INICIALIZAMOS SUB-MATRICES*/
-    subm_A = (float **) malloc ( tam_subM* sizeof(float) );
-    subm_B = (float **) malloc ( tam_subM* sizeof(float) );
-    subm_C = (float **) malloc ( tam_subM* sizeof(float) );
-    for (i = 0; i < tam_subM; i++) {
-		subm_A[i] = (float *) malloc ( tam_subM* sizeof(float) );
-		subm_B[i] = (float *) malloc ( tam_subM* sizeof(float) );
-		subm_C[i] = (float *) malloc ( tam_subM* sizeof(float) );
- 	}
     /*inicializamos submatriz C*/
     for (i=0; i<tam_subM; i++){
         for (j=0; j<tam_subM; j++){
-            subm_A[i][j] =0;
-            subm_B[i][j] =0;
             subm_C[i][j] =0;
         }
     }
-printf("\n\n-------------------------------------------------- %i\n",tam_subM);fflush(stdout);
-    float **A;
-    float **B;
+
     if(mi_id == 0)
 	{
-	    A = (float **) malloc ( n* sizeof(float) );
-	    B = (float **) malloc ( n* sizeof(float) );
-
-	    for (i = 0; i < n; i++) {
-            A[i] = (float *) malloc ( n* sizeof(float) );
-            B[i] = (float *) malloc ( n* sizeof(float) );
-        }
-//	    llenarMatriz(A,n);
-//        llenarMatriz(B,n);
-        float valor=0;
+	    llenarMatriz(A);
+        llenarMatriz(B);
 
         for (i=0; i<n; i++){
             for (j=0; j<n; j++){
-                valor++;
-                A[i][j] = valor;
-                B[i][j] = valor;
+                C[i][j] =0;
             }
         }
-        printf("\n\nLLENAMOS MATRICES...--------------------- %i\n",tam_subM);fflush(stdout);
 
         //imprimirMatriz(A);
         printf("\n");
@@ -162,9 +139,8 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                         coords_envio[1] = coords_envio[1] + m;
                     }
                     MPI_Cart_rank(comm2d, coords_envio, &rank_envio);
-                    printf("RANKING AL Q ENVIO A %d \n",rank_envio);
-                    imprimirMatriz(subm_A,tam_subM);
-                    MPI_Send(subm_A, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 1, comm2d);
+                    //printf("RANKING AL Q ENVIO A %d \n",rank_envio);
+                    MPI_Send(subm_A, (tam_subM*tam_subM), MPI_FLOAT, rank_envio, 1, comm2d);
 
                     /*calculamos el envio para B*/
                     /*Lo que se hace es modificar la coordenada referente
@@ -176,13 +152,11 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                         coords_envio[0] = coords_envio[0] + m;
                     }
                     MPI_Cart_rank(comm2d, coords_envio, &rank_envio);
-                    printf("RANKING AL Q ENVIO B %d \n",rank_envio);
-                    imprimirMatriz(subm_B,tam_subM);
-                    MPI_Send(subm_B, tam_subM*tam_subM, MPI_FLOAT, rank_envio, 2, comm2d);
+                    //printf("RANKING AL Q ENVIO B %d \n",rank_envio);
+                    MPI_Send(subm_B, (tam_subM*tam_subM), MPI_FLOAT, rank_envio, 2, comm2d);
                 }
 		    }
 		}
-		printf("\n\nENVIAMOS MATRICES--------------------- %i\n",tam_subM);fflush(stdout);
 		/*CARGO lo QUE CORRESPONDE AL PROCESO 0*/
 		for (k=0; k<tam_subM; k++){
             for (l=0;l < tam_subM; l++){
@@ -190,7 +164,6 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                 subm_B[k][l]=B[k][l];
             }
         }
-        printf("\n\nCARGUE SUBMATRICES DEL PROC 0--------------------- %i\n",tam_subM);fflush(stdout);
         /*RESUELVO LA PARTE DE LA MATRIZ QUE SE ME QUEDO
         EN EL PROCESO 0*/
 
@@ -209,7 +182,6 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
             MPI_Sendrecv_replace(subm_B,tam_subM*tam_subM,MPI_FLOAT,destino,2,fuente,2,comm2d,&statusB);
         }
         printf("PROCESO 0 MATRIZ C FINAL:\n");
-        printf("\n\nRESOLVI EN EL PROCESO 0 LA SUBMATRIZ--------------------- %i\n",tam_subM);fflush(stdout);
         //imprimirSubMatriz(subm_C);
 
 	}
@@ -220,18 +192,6 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
 	    MPI_Recv(subm_A, tam_subM*tam_subM, MPI_FLOAT, 0, 1, comm2d, &statusA);
 
 		MPI_Recv(subm_B,tam_subM*tam_subM,MPI_FLOAT,0,2,comm2d,&statusB);
-		printf("\n\nCADA PROCESO RECIBIO SU SUBMATRIZ,ID--------------- %i\n",mi_id);fflush(stdout);
-		printf("\nSUBMATRIZ A RECIBIDA EN %D",mi_id);
-		for (i=0; i<tam_subM; i++) {
-            printf("\n\t| ");
-            for (j=0; j<tam_subM; j++){
-                printf("%f ", subm_B[i][j]);
-                printf("|");
-            }
-        }
-//		imprimirMatriz(subm_A,tam_subM);
-//		printf("\nSUBMATRIZ B RECIBIDA EN %D",mi_id);
-//		imprimirMatriz(subm_B,tam_subM);
 
 		for (ciclos = 0; ciclos < tam_subM; ciclos++) {
             for (i = 0; i < tam_subM; i++) {
@@ -251,44 +211,26 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
         /*AHORA LO QUE HACEMOS ES ENVIAR AL PROCESO MAESTRO EL RESULTADO FINAL QUE OBTUVIMOS PARA NUESTRA
         SUBMATRIZ C*/
         //printf("MI ID--> %d\n", mi_id);
-        //imprimirMatriz(subm_C,tam_subM);
+        //imprimirSubMatriz(subm_C);
 
         MPI_Send(subm_C,tam_subM*tam_subM,MPI_FLOAT,0,mi_id,comm2d);
 	}
 
 	if(mi_id == 0){
-	    float **C;
-	    float **subm_C_aux;
-	    C = (float **) malloc ( n* sizeof(float) );
-	    subm_C_aux = (float **) malloc ( tam_subM* sizeof(float) );
-        /*INICIALIZAMOS C*/
-	    for (i = 0; i < n; i++) {
-            C[i] = (float *) malloc ( n* sizeof(float) );
-        }
 	    for (i=0; i<n; i++){
             for (j=0; j<n; j++){
                 C[i][j] =0;
             }
         }
-        /*INICIALIZAMOS SUBMATRIZ C AUXILIAR*/
-        for (i = 0; i < tam_subM; i++) {
-            subm_C_aux[i] = (float *) malloc ( tam_subM* sizeof(float) );
-        }
-	    for (i=0; i<tam_subM; i++){
-            for (j=0; j<tam_subM; j++){
-                subm_C_aux[i][j] =0;
-            }
-        }
-
 	    /*RECIBIMOS Y ESTABLECEMOS CADA SUBMATRIZ C EN LA PARTE QUE CORRESPONDE*/
         //MPI_Barrier(comm2d);
 	    for(i=1; i < size; i++)
 		{
 			MPI_Recv(subm_C_aux,tam_subM*tam_subM, MPI_FLOAT,MPI_ANY_SOURCE,MPI_ANY_TAG,comm2d,&statusC);
 			MPI_Cart_coords(comm2d,statusC.MPI_TAG,2, coords_envio);
-			printf("\n\nRECIBI EN 0 LOS RESULTADOS,ID--------------- %i\n",statusC.MPI_TAG);fflush(stdout);
+
 			printf("RECIBIMOS DE [%d][%d] -->\n",coords_envio[0],coords_envio[1]);
-			//imprimirSubMatriz(subm_C_aux);
+			imprimirSubMatriz(subm_C_aux);
 			fila_recepcion = coords_envio[0];
 			col_recepcion = coords_envio[1];
 			cont_columna =0;
@@ -308,7 +250,6 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                 C[k][l]=subm_C[k][l];
             }
         }
-        printf("\n\nLLEGAMOS AL FINAL,ID--------------- %i\n",mi_id);fflush(stdout);
         printf("AK EMPIEZO A IMPRIMIR\n");
         timeFin = MPI_Wtime();
 
@@ -316,14 +257,14 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
             printf("NO PUEDO ABRIR ARCHIVO.\n");
             exit(1);
         }
+        printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
+        printf("IMPRESION DE LA MATRIZ A\n.");
+        imprimirMatriz(A);
+        printf("IMPRESION DE LA MATRIZ B\n.");
+        imprimirMatriz(B);
 
         printf("IMPRESION FINAL DE LA MATRIZ C\n.");
-        printf("TIEMPO TARDADO---> %f segundos\n", timeFin-timeIni);
-        imprimirMatriz(A,n);
-        printf("\n");
-        imprimirMatriz(B,n);
-        printf("\n");
-        //imprimirMatriz(C,n);
+        imprimirMatriz(C);
         fclose(fp);
         //imprimirMatriz(C);
 	}
