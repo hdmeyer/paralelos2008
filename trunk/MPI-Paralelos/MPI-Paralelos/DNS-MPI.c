@@ -3,7 +3,7 @@
 #include "mpi.h"
 #define n 10
 #define tam_sum 5
-#define imprimir 1
+#define imprimir 0
 #include <math.h>
 
 int coords[3], dims[3], periods[3];
@@ -53,7 +53,7 @@ void imprimirSubMatriz(float m[tam_sum][tam_sum])
 int main(int argc, char** argv) {
     int mi_fila, mi_columna, mi_plano, fila_recepcion, col_recepcion;
     int coords_envio[3], coords_recepcion[3], vector_logico[3];
-    int rank_envio,size, valor_matriz;
+    int rank_envio,size, valor_matrizA,valor_matrizB;
     double timeIni, timeFin;
     int i,j,k,l, cont_fila, cont_columna;
     MPI_Status statusA;
@@ -121,15 +121,18 @@ int main(int argc, char** argv) {
 	SI ESTAMOS EN EL PLANO 0, ENVIAMOS A LOS DEMAS PLANOS LAS PARTES DE A Y B QUE CORRESPONDEN.*/
 
 	if(mi_plano == 0){
-	    valor_matriz=5;
+	    valor_matrizA=5;
+	    valor_matrizB=1;
 
         for (k=0; k<tam_subM; k++){
             for (l=0;l < tam_subM; l++){
-                subm_A[k][l]=valor_matriz;
-                subm_B[k][l]=valor_matriz;
-                valor_matriz++;
+                subm_A[k][l]=valor_matrizA;
+                subm_B[k][l]=valor_matrizB;
+                valor_matrizA++;
+                valor_matrizB++;
             }
-            valor_matriz =5;
+            valor_matrizA =5;
+            valor_matrizB =1;
         }
 	    /*AQUI LO QUE HACEMOS ES ENVIAR LOS SUB-BLOQUES DE A, DE ACUERDO A LAS
 	    COLUMNAS A DONDE CORRESPONDA Pijk = Aijj.*/
@@ -259,18 +262,23 @@ printf("\n\n-------------------------------------------------- %i\n",tam_subM);f
                 }
             }
         }
-        valor_matriz=5;
+
+        valor_matrizA=5;
+        valor_matrizB=1;
         for (k=0; k<n; k++){
             for (l=0;l < n; l++){
                 if(l == aux){
-                    valor_matriz =5;
+                    valor_matrizA =5;
+                    valor_matrizB =1;
                     //aux = aux+aux;
                 }
-                A[k][l]=valor_matriz;
-                B[k][l]=valor_matriz;
-                valor_matriz++;
+                A[k][l]=valor_matrizA;
+                B[k][l]=valor_matrizB;
+                valor_matrizA++;
+                valor_matrizB++;
             }
-            valor_matriz =5;
+            valor_matrizA =5;
+            valor_matrizB =1;
         }
 
         if(imprimir ==1){
