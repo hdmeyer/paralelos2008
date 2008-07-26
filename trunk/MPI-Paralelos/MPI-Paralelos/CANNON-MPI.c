@@ -1,3 +1,22 @@
+/*********************************************************************************************
+ * Archivo: CANNON-MPI.c
+ *
+ * Implementacion del algoritmo de Cannon para la multiplicacion de matrices
+ * densas utilizando la Interfaz de Paso de Mensajes MPI.
+ *
+ * Para compilar:
+ * gcc CANNON-MPI.c -o CANNON-MPI -I c:\ap -L c:\ap -lmpich
+ *
+ * Autores:
+ * - Eduardo Rivas. erivas17@gmail.com
+ * - Hugo Meyer. meyer.hugo@gmail.com
+ *
+ * Alumnos de la Universidad Nacional de Asuncion - Facultad Politecnica.
+ * Carrera: Ingenieria Informatica.
+ * Materia: Electiva V - Algoritmos Paralelos.
+ * Profesor: Cristian Von Lucken.
+ * Anho: 2008.
+ **********************************************************************************************/
 #include <stdio.h>
 #include "mpi.h"
 #define n 4
@@ -72,21 +91,13 @@ int main(int argc, char** argv) {
     float subm_C_aux[tam_subM][tam_subM];
     /*EN ESTE CASO SOLO ES DE DOS DIMENSIONES*/
     MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodos, 0, &comm2d);
-
-    printf(" cart create \n");
     /* Obtiene mi nuevo id en 2D */
     MPI_Comm_rank(comm2d, &mi_id);
-    printf(" comm rank \n");
     /* Obtiene mis coordenadas */
     MPI_Cart_coords(comm2d, mi_id, 2, coords);
-    printf(" CART COORDS\n");
 
     mi_fila = coords[0];
     mi_columna= coords[1];
-
-    printf(" mi fila %d \n", mi_fila);
-    printf(" mi columna %d \n", mi_columna);
-    printf(" MI RANKING %d \n", mi_id);
 
     /*inicializamos submatriz C*/
     for (i=0; i<tam_subM; i++){
@@ -106,9 +117,7 @@ int main(int argc, char** argv) {
             }
         }
 
-        //imprimirMatriz(A);
         printf("\n");
-        //imprimirMatriz(B);
 
         /*Ahora basicamente lo que hacemos es enviar a cada proceso del plano cero
         una parte de A y B que es la que les corresponde, enviamos a cada uno ya con la distribución
@@ -129,17 +138,16 @@ int main(int argc, char** argv) {
                             cont_columna++;
                         }
                     }
-//                    /*calculamos el envio para A*/
-//                    /*Lo que se hace es modificar la coordenada referente
-//                    a la columna para enviar A al Pi,j que corresponde y luego
-//                    en la recepcion ya puede proceder directamente a la multiplicacion*/
+                    /*calculamos el envio para A*/
+                    /*Lo que se hace es modificar la coordenada referente
+                    a la columna para enviar A al Pi,j que corresponde y luego
+                    en la recepcion ya puede proceder directamente a la multiplicacion*/
                     coords_envio[0] = i;
                     coords_envio[1] = j-i;
                     if(coords_envio[1] < 0){
                         coords_envio[1] = coords_envio[1] + m;
                     }
                     MPI_Cart_rank(comm2d, coords_envio, &rank_envio);
-                    //printf("RANKING AL Q ENVIO A %d \n",rank_envio);
                     MPI_Send(subm_A, (tam_subM*tam_subM), MPI_FLOAT, rank_envio, 1, comm2d);
 
                     /*calculamos el envio para B*/
@@ -152,7 +160,6 @@ int main(int argc, char** argv) {
                         coords_envio[0] = coords_envio[0] + m;
                     }
                     MPI_Cart_rank(comm2d, coords_envio, &rank_envio);
-                    //printf("RANKING AL Q ENVIO B %d \n",rank_envio);
                     MPI_Send(subm_B, (tam_subM*tam_subM), MPI_FLOAT, rank_envio, 2, comm2d);
                 }
 		    }
@@ -181,8 +188,6 @@ int main(int argc, char** argv) {
             MPI_Cart_shift(comm2d,0,-1,&fuente,&destino);
             MPI_Sendrecv_replace(subm_B,tam_subM*tam_subM,MPI_FLOAT,destino,2,fuente,2,comm2d,&statusB);
         }
-        printf("PROCESO 0 MATRIZ C FINAL:\n");
-        //imprimirSubMatriz(subm_C);
 
 	}
 	else{
@@ -210,9 +215,6 @@ int main(int argc, char** argv) {
 
         /*AHORA LO QUE HACEMOS ES ENVIAR AL PROCESO MAESTRO EL RESULTADO FINAL QUE OBTUVIMOS PARA NUESTRA
         SUBMATRIZ C*/
-        //printf("MI ID--> %d\n", mi_id);
-        //imprimirSubMatriz(subm_C);
-
         MPI_Send(subm_C,tam_subM*tam_subM,MPI_FLOAT,0,mi_id,comm2d);
 	}
 
@@ -223,14 +225,12 @@ int main(int argc, char** argv) {
             }
         }
 	    /*RECIBIMOS Y ESTABLECEMOS CADA SUBMATRIZ C EN LA PARTE QUE CORRESPONDE*/
-        //MPI_Barrier(comm2d);
 	    for(i=1; i < size; i++)
 		{
 			MPI_Recv(subm_C_aux,tam_subM*tam_subM, MPI_FLOAT,MPI_ANY_SOURCE,MPI_ANY_TAG,comm2d,&statusC);
 			MPI_Cart_coords(comm2d,statusC.MPI_TAG,2, coords_envio);
 
-			printf("RECIBIMOS DE [%d][%d] -->\n",coords_envio[0],coords_envio[1]);
-			imprimirSubMatriz(subm_C_aux);
+			//imprimirSubMatriz(subm_C_aux);
 			fila_recepcion = coords_envio[0];
 			col_recepcion = coords_envio[1];
 			cont_columna =0;
@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
                 C[k][l]=subm_C[k][l];
             }
         }
-        printf("AK EMPIEZO A IMPRIMIR\n");
+        printf("INICIAMOS IMPRESIÓN A ARCHIVO...\n");
         timeFin = MPI_Wtime();
 
         if((fp=freopen("ResultadosCannon.txt", "w" ,stdout))==NULL) {
